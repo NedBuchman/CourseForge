@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Registration - Introduction to Data Analysis</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            line-height: 1.6;
+            color: #1a202c;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, #2d5a8c 0%, #1a365d 100%);
+            padding: 1.5rem 0;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.15);
+        }
+
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            text-align: center;
+            color: white;
+        }
+
+        .header-title {
+            font-size: 2rem;
+            font-weight: 900;
+            margin-bottom: 0.5rem;
+        }
+
+        .header-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.95;
+        }
+
+        /* Main Content */
+        .main-section {
+            max-width: 900px;
+            margin: 3rem auto;
+            padding: 0 2rem 3rem 2rem;
+        }
+
+        /* Welcome Banner */
+        .welcome-banner {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 3rem;
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.2);
+        }
+
+        .welcome-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .welcome-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        .welcome-subtitle {
+            font-size: 1.05rem;
+            opacity: 0.95;
+        }
+
+        /* Registration Form */
+        .registration-card {
+            background: white;
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            margin-bottom: 2rem;
+        }
+
+        .form-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #1a202c;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-description {
+            color: #6b7280;
+            margin-bottom: 2rem;
+            line-height: 1.7;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .form-label .required {
+            color: #ef4444;
+            margin-left: 0.2rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.9rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #2d5a8c;
+            box-shadow: 0 0 0 3px rgba(45, 90, 140, 0.1);
+        }
+
+        .form-input::placeholder {
+            color: #9ca3af;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        /* Document Sections */
+        .document-section {
+            background: white;
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            margin-bottom: 2rem;
+        }
+
+        .document-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #f3f4f6;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .document-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #1a202c;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .print-button {
+            padding: 0.7rem 1.5rem;
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .print-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(107, 114, 128, 0.3);
+        }
+
+        .document-content {
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 2rem;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 1.5rem;
+            line-height: 1.8;
+            color: #374151;
+        }
+
+        .document-content h3 {
+            color: #1a202c;
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin: 1.5rem 0 0.8rem 0;
+        }
+
+        .document-content h3:first-child {
+            margin-top: 0;
+        }
+
+        .document-content p {
+            margin-bottom: 1rem;
+        }
+
+        .document-content ul {
+            margin: 1rem 0 1rem 2rem;
+        }
+
+        .document-content li {
+            margin: 0.5rem 0;
+        }
+
+        .document-content strong {
+            color: #1a202c;
+            font-weight: 700;
+        }
+
+        /* Custom scrollbar */
+        .document-content::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .document-content::-webkit-scrollbar-track {
+            background: #e5e7eb;
+            border-radius: 10px;
+        }
+
+        .document-content::-webkit-scrollbar-thumb {
+            background: #9ca3af;
+            border-radius: 10px;
+        }
+
+        .document-content::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+
+        /* Acceptance Buttons */
+        .acceptance-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .acceptance-button {
+            flex: 1;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-accept {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-accept:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-accept.accepted {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        }
+
+        .btn-decline {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-decline:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+        }
+
+        .acceptance-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .acceptance-status {
+            text-align: center;
+            padding: 1rem;
+            border-radius: 10px;
+            font-weight: 700;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .acceptance-status.accepted {
+            display: block;
+            background: #d1fae5;
+            color: #065f46;
+            border: 2px solid #10b981;
+        }
+
+        .acceptance-status.declined {
+            display: block;
+            background: #fee2e2;
+            color: #991b1b;
+            border: 2px solid #ef4444;
+        }
+
+        /* Navigation Buttons */
+        .nav-section {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 3rem;
+        }
+
+        .nav-button {
+            padding: 1.2rem 3rem;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-back {
+            background: white;
+            color: #6b7280;
+            border: 2px solid #e5e7eb;
+        }
+
+        .btn-back:hover {
+            background: #f9fafb;
+            border-color: #cbd5e1;
+        }
+
+        .btn-next {
+            background: linear-gradient(135deg, #2d5a8c 0%, #1a365d 100%);
+            color: white;
+            box-shadow: 0 8px 25px rgba(45, 90, 140, 0.4);
+        }
+
+        .btn-next:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(45, 90, 140, 0.5);
+        }
+
+        .btn-next:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Info Alert */
+        .info-alert {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-left: 5px solid #f59e0b;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .info-alert-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #78350f;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-alert-text {
+            color: #92400e;
+            line-height: 1.7;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-title {
+                font-size: 1.5rem;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .registration-card,
+            .document-section {
+                padding: 2rem;
+            }
+
+            .acceptance-buttons {
+                flex-direction: column;
+            }
+
+            .nav-section {
+                flex-direction: column;
+            }
+
+            .nav-button {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .document-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .print-button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .print-content, .print-content * {
+                visibility: visible;
+            }
+            .print-content {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <h1 class="header-title">📊 Course Registration</h1>
+            <p class="header-subtitle">Introduction to Data Analysis</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="main-section">
+        <!-- Welcome Banner -->
+        <div class="welcome-banner">
+            <div class="welcome-icon">🎓</div>
+            <h2 class="welcome-title">Welcome to Your Learning Adventure!</h2>
+            <p class="welcome-subtitle">Complete your registration to begin mastering data analysis</p>
+        </div>
+
+        <!-- Registration Form -->
+        <div class="registration-card">
+            <h2 class="form-title">
+                <span>👤</span> Student Information
+            </h2>
+            <p class="form-description">
+                Please provide your information to create your student account. All fields marked with * are required.
+            </p>
+
+            <form id="registrationForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">
+                            First Name <span class="required">*</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            class="form-input" 
+                            id="firstName" 
+                            placeholder="Enter your first name"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            Last Name <span class="required">*</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            class="form-input" 
+                            id="lastName" 
+                            placeholder="Enter your last name"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        Email Address <span class="required">*</span>
+                    </label>
+                    <input 
+                        type="email" 
+                        class="form-input" 
+                        id="email" 
+                        placeholder="your.email@example.com"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        Phone Number <span class="required">*</span>
+                    </label>
+                    <input 
+                        type="tel" 
+                        class="form-input" 
+                        id="phone" 
+                        placeholder="(555) 123-4567"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        Street Address <span class="required">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        class="form-input" 
+                        id="address" 
+                        placeholder="123 Main Street"
+                        required
+                    >
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">
+                            City <span class="required">*</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            class="form-input" 
+                            id="city" 
+                            placeholder="Your city"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            State/Province <span class="required">*</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            class="form-input" 
+                            id="state" 
+                            placeholder="Your state"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">
+                            ZIP/Postal Code <span class="required">*</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            class="form-input" 
+                            id="zip" 
+                            placeholder="12345"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            Country <span class="required">*</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            class="form-input" 
+                            id="country" 
+                            placeholder="Your country"
+                            required
+                        >
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Info Alert -->
+        <div class="info-alert">
+            <div class="info-alert-title">
+                <span>📋</span> Important: Review Required Documents
+            </div>
+            <div class="info-alert-text">
+                Before proceeding, please carefully review and accept both the Terms and Conditions and the Data Privacy Notice below. You must accept both documents to continue with your enrollment.
+            </div>
+        </div>
+
+        <!-- Terms and Conditions Section -->
+        <div class="document-section">
+            <div class="document-header">
+                <h3 class="document-title">
+                    <span>📜</span> Terms and Conditions
+                </h3>
+                <button class="print-button" onclick="printDocument('termsContent')">
+                    <span>🖨️</span> Print
+                </button>
+            </div>
+
+            <div class="document-content" id="termsContent">
+                <h3>1. Course Enrollment and Access</h3>
+                <p>
+                    By enrolling in the "Introduction to Data Analysis" course, you are granted a personal, non-transferable, non-exclusive license to access the course materials. Your access to the course begins immediately upon completion of registration and acceptance of these terms.
+                </p>
+
+                <h3>2. Lifetime Access</h3>
+                <p>
+                    You will have lifetime access to all course content, including lessons, quizzes, and any future updates or improvements made to the course materials. This access is contingent upon compliance with these terms and conditions.
+                </p>
+
+                <h3>3. Course Completion and Certification</h3>
+                <p>
+                    To receive a certificate of completion, you must:
+                </p>
+                <ul>
+                    <li>Complete all 5 lessons in the course</li>
+                    <li>Pass all 5 quizzes with a minimum score of 80% (4 out of 5 questions correct)</li>
+                    <li>Review all course materials in their entirety</li>
+                </ul>
+                <p>
+                    Certificates are generated automatically upon meeting these requirements and can be downloaded immediately.
+                </p>
+
+                <h3>4. Quiz Retakes and Assessments</h3>
+                <p>
+                    You may retake quizzes unlimited times. Each quiz attempt will present randomly selected questions from a larger question bank to ensure comprehensive understanding of the material. There is no penalty for multiple attempts.
+                </p>
+
+                <h3>5. Intellectual Property Rights</h3>
+                <p>
+                    All course materials, including but not limited to text, graphics, images, video content, lesson materials, quizzes, and assessments are the intellectual property of the course provider and are protected by copyright laws. You may not:
+                </p>
+                <ul>
+                    <li>Reproduce, distribute, or share course materials with unauthorized parties</li>
+                    <li>Record, screenshot, or copy course content for redistribution</li>
+                    <li>Use course materials for commercial purposes without written permission</li>
+                    <li>Remove or modify any copyright notices or proprietary markings</li>
+                </ul>
+
+                <h3>6. User Conduct</h3>
+                <p>
+                    You agree to use the course platform responsibly and professionally. Prohibited activities include:
+                </p>
+                <ul>
+                    <li>Attempting to gain unauthorized access to the platform or other users' accounts</li>
+                    <li>Interfering with or disrupting the course platform or servers</li>
+                    <li>Using automated systems or bots to access course content</li>
+                    <li>Sharing login credentials with unauthorized individuals</li>
+                </ul>
+
+                <h3>7. Refund Policy</h3>
+                <p>
+                    <strong>Important:</strong> This course is provided free of charge as an educational resource. Therefore, no refunds are applicable. By enrolling, you acknowledge that you are accessing free educational content.
+                </p>
+
+                <h3>8. Course Content Modifications</h3>
+                <p>
+                    We reserve the right to modify, update, or discontinue any part of the course content at any time without prior notice. We will make reasonable efforts to maintain the quality and availability of course materials, but we do not guarantee uninterrupted access.
+                </p>
+
+                <h3>9. Technical Requirements</h3>
+                <p>
+                    You are responsible for ensuring you have appropriate internet connectivity, compatible devices, and up-to-date web browsers to access the course. Recommended technical specifications:
+                </p>
+                <ul>
+                    <li>Modern web browser (Chrome, Firefox, Safari, Edge - latest version)</li>
+                    <li>Stable internet connection (minimum 5 Mbps recommended)</li>
+                    <li>Device capable of running Microsoft Excel or Google Sheets</li>
+                </ul>
+
+                <h3>10. Limitation of Liability</h3>
+                <p>
+                    The course is provided "as is" without warranties of any kind, either express or implied. We are not liable for:
+                </p>
+                <ul>
+                    <li>Technical issues preventing access to course materials</li>
+                    <li>Loss of data or progress due to technical failures</li>
+                    <li>Any damages arising from use or inability to use the course</li>
+                    <li>Outcomes or results from applying course concepts in professional settings</li>
+                </ul>
+
+                <h3>11. Termination</h3>
+                <p>
+                    We reserve the right to terminate or suspend your access to the course immediately, without prior notice, for conduct that we believe violates these terms or is harmful to other users, the course platform, or third parties.
+                </p>
+
+                <h3>12. Changes to Terms</h3>
+                <p>
+                    We may revise these terms at any time. Continued use of the course after changes are posted constitutes acceptance of the modified terms. We will make reasonable efforts to notify users of significant changes.
+                </p>
+
+                <h3>13. Governing Law</h3>
+                <p>
+                    These terms shall be governed by and construed in accordance with applicable laws. Any disputes arising from these terms or your use of the course shall be subject to the exclusive jurisdiction of the appropriate courts.
+                </p>
+
+                <h3>14. Contact Information</h3>
+                <p>
+                    For questions about these terms and conditions, please contact us at: support@dataanalysiscourse.com
+                </p>
+
+                <p style="margin-top: 2rem;">
+                    <strong>Last Updated:</strong> January 2025<br>
+                    <strong>Version:</strong> 1.0
+                </p>
+            </div>
+
+            <div class="acceptance-buttons">
+                <button class="acceptance-button btn-decline" onclick="declineDocument('terms')">
+                    <span>✗</span> I Don't Accept
+                </button>
+                <button class="acceptance-button btn-accept" id="termsAcceptBtn" onclick="acceptDocument('terms')">
+                    <span>✓</span> I Accept
+                </button>
+            </div>
+
+            <div class="acceptance-status" id="termsStatus"></div>
+        </div>
+
+        <!-- Data Privacy Notice Section -->
+        <div class="document-section">
+            <div class="document-header">
+                <h3 class="document-title">
+                    <span>🔒</span> Data Privacy Notice
+                </h3>
+                <button class="print-button" onclick="printDocument('privacyContent')">
+                    <span>🖨️</span> Print
+                </button>
+            </div>
+
+            <div class="document-content" id="privacyContent">
+                <h3>Introduction</h3>
+                <p>
+                    This Data Privacy Notice explains how we collect, use, store, and protect your personal information when you enroll in and use the "Introduction to Data Analysis" course. We are committed to protecting your privacy and ensuring the security of your personal data.
+                </p>
+
+                <h3>1. Information We Collect</h3>
+                <p>
+                    <strong>Personal Identification Information:</strong>
+                </p>
+                <ul>
+                    <li>Full name (first and last name)</li>
+                    <li>Email address</li>
+                    <li>Phone number</li>
+                    <li>Mailing address (street, city, state/province, ZIP/postal code, country)</li>
+                </ul>
+                
+                <p>
+                    <strong>Course Activity Information:</strong>
+                </p>
+                <ul>
+                    <li>Lessons completed and progress through course materials</li>
+                    <li>Quiz scores and assessment results</li>
+                    <li>Time spent on lessons and platform usage patterns</li>
+                    <li>Certificate generation and download history</li>
+                    <li>Login timestamps and access logs</li>
+                </ul>
+
+                <p>
+                    <strong>Technical Information:</strong>
+                </p>
+                <ul>
+                    <li>IP address and approximate geographic location</li>
+                    <li>Browser type and version</li>
+                    <li>Device type and operating system</li>
+                    <li>Cookies and similar tracking technologies</li>
+                </ul>
+
+                <h3>2. How We Use Your Information</h3>
+                <p>
+                    We use your personal information for the following purposes:
+                </p>
+                <ul>
+                    <li><strong>Course Delivery:</strong> To provide access to course materials, track your progress, and generate certificates</li>
+                    <li><strong>Communication:</strong> To send course-related updates, important announcements, and respond to your inquiries</li>
+                    <li><strong>Platform Improvement:</strong> To analyze usage patterns and improve course content and user experience</li>
+                    <li><strong>Account Security:</strong> To verify your identity and protect against unauthorized access</li>
+                    <li><strong>Compliance:</strong> To comply with legal obligations and enforce our terms and conditions</li>
+                </ul>
+
+                <h3>3. Legal Basis for Processing</h3>
+                <p>
+                    We process your personal information based on:
+                </p>
+                <ul>
+                    <li><strong>Consent:</strong> You have given explicit consent for us to process your information by accepting this privacy notice</li>
+                    <li><strong>Contract Performance:</strong> Processing is necessary to provide the course services you've enrolled in</li>
+                    <li><strong>Legitimate Interests:</strong> We have legitimate business interests in improving our courses and preventing fraud</li>
+                </ul>
+
+                <h3>4. How We Share Your Information</h3>
+                <p>
+                    We do not sell your personal information to third parties. We may share your information only in the following circumstances:
+                </p>
+                <ul>
+                    <li><strong>Service Providers:</strong> We may share data with trusted third-party service providers who help us operate the course platform (e.g., hosting services, analytics providers). These providers are contractually obligated to protect your data.</li>
+                    <li><strong>Legal Requirements:</strong> We may disclose information if required by law, court order, or governmental authority</li>
+                    <li><strong>Business Transfers:</strong> In the event of a merger, acquisition, or sale of assets, your information may be transferred to the new entity</li>
+                    <li><strong>Protection of Rights:</strong> To protect our rights, property, or safety, and that of our users and the public</li>
+                </ul>
+
+                <h3>5. Data Storage and Security</h3>
+                <p>
+                    We implement appropriate technical and organizational measures to protect your personal information:
+                </p>
+                <ul>
+                    <li>Encryption of data in transit using SSL/TLS protocols</li>
+                    <li>Secure encrypted storage of data at rest</li>
+                    <li>Regular security audits and vulnerability assessments</li>
+                    <li>Access controls limiting who can view your information</li>
+                    <li>Regular backups to prevent data loss</li>
+                </ul>
+                <p>
+                    Your data is stored on secure servers located in the United States. We retain your data for as long as your account is active or as needed to provide services, comply with legal obligations, resolve disputes, and enforce agreements.
+                </p>
+
+                <h3>6. Your Privacy Rights</h3>
+                <p>
+                    You have the following rights regarding your personal information:
+                </p>
+                <ul>
+                    <li><strong>Right to Access:</strong> You can request a copy of the personal information we hold about you</li>
+                    <li><strong>Right to Correction:</strong> You can request correction of inaccurate or incomplete information</li>
+                    <li><strong>Right to Deletion:</strong> You can request deletion of your personal information (subject to legal obligations)</li>
+                    <li><strong>Right to Restrict Processing:</strong> You can request limitation on how we use your information</li>
+                    <li><strong>Right to Data Portability:</strong> You can request your data in a structured, machine-readable format</li>
+                    <li><strong>Right to Object:</strong> You can object to certain types of processing of your information</li>
+                    <li><strong>Right to Withdraw Consent:</strong> You can withdraw consent at any time (may affect access to services)</li>
+                </ul>
+                <p>
+                    To exercise any of these rights, please contact us at privacy@dataanalysiscourse.com. We will respond to your request within 30 days.
+                </p>
+
+                <h3>7. Cookies and Tracking Technologies</h3>
+                <p>
+                    We use cookies and similar technologies to:
+                </p>
+                <ul>
+                    <li>Remember your login status and preferences</li>
+                    <li>Track course progress and completion</li>
+                    <li>Analyze usage patterns and improve user experience</li>
+                    <li>Ensure platform security and prevent fraud</li>
+                </ul>
+                <p>
+                    You can control cookies through your browser settings, but disabling cookies may affect platform functionality.
+                </p>
+
+                <h3>8. Children's Privacy</h3>
+                <p>
+                    Our course is intended for users aged 16 and older. We do not knowingly collect personal information from children under 16. If we become aware that we have collected information from a child under 16, we will take steps to delete that information promptly.
+                </p>
+
+                <h3>9. International Data Transfers</h3>
+                <p>
+                    Your information may be transferred to and processed in countries other than your country of residence. We ensure appropriate safeguards are in place to protect your information in accordance with this privacy notice and applicable data protection laws.
+                </p>
+
+                <h3>10. Changes to This Privacy Notice</h3>
+                <p>
+                    We may update this privacy notice from time to time. We will notify you of significant changes by email or through prominent notice on the course platform. Continued use of the course after changes are posted constitutes acceptance of the updated privacy notice.
+                </p>
+
+                <h3>11. Contact Information</h3>
+                <p>
+                    For questions, concerns, or requests regarding this privacy notice or your personal information:
+                </p>
+                <ul>
+                    <li><strong>Email:</strong> privacy@dataanalysiscourse.com</li>
+                    <li><strong>Mail:</strong> Data Privacy Officer, 123 Education Lane, Learning City, ST 12345</li>
+                    <li><strong>Response Time:</strong> We will respond to privacy inquiries within 30 days</li>
+                </ul>
+
+                <h3>12. Data Protection Authority</h3>
+                <p>
+                    If you are not satisfied with our response to your privacy concerns, you have the right to lodge a complaint with your local data protection authority or supervisory authority.
+                </p>
+
+                <p style="margin-top: 2rem;">
+                    <strong>Last Updated:</strong> January 2025<br>
+                    <strong>Version:</strong> 1.0
+                </p>
+            </div>
+
+            <div class="acceptance-buttons">
+                <button class="acceptance-button btn-decline" onclick="declineDocument('privacy')">
+                    <span>✗</span> I Don't Accept
+                </button>
+                <button class="acceptance-button btn-accept" id="privacyAcceptBtn" onclick="acceptDocument('privacy')">
+                    <span>✓</span> I Accept
+                </button>
+            </div>
+
+            <div class="acceptance-status" id="privacyStatus"></div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="nav-section">
+            <button class="nav-button btn-back" onclick="goBack()">
+                <span>←</span> Back to Landing Page
+            </button>
+            <button class="nav-button btn-next" id="nextBtn" onclick="submitRegistration()" disabled>
+                Next: Begin Your Adventure <span>→</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Track acceptance status
+        let acceptanceStatus = {
+            terms: false,
+            privacy: false
+        };
+
+        // Check if form is valid
+        function validateForm() {
+            const form = document.getElementById('registrationForm');
+            return form.checkValidity();
+        }
+
+        // Update Next button state
+        function updateNextButton() {
+            const nextBtn = document.getElementById('nextBtn');
+            const formValid = validateForm();
+            const allAccepted = acceptanceStatus.terms && acceptanceStatus.privacy;
+            
+            nextBtn.disabled = !(formValid && allAccepted);
+        }
+
+        // Add form validation listeners
+        document.getElementById('registrationForm').addEventListener('input', updateNextButton);
+
+        // Accept document
+        function acceptDocument(type) {
+            acceptanceStatus[type] = true;
+            
+            const statusDiv = document.getElementById(type + 'Status');
+            const acceptBtn = document.getElementById(type + 'AcceptBtn');
+            
+            statusDiv.className = 'acceptance-status accepted';
+            statusDiv.innerHTML = '<span>✓</span> You have accepted the ' + (type === 'terms' ? 'Terms and Conditions' : 'Data Privacy Notice');
+            
+            acceptBtn.classList.add('accepted');
+            acceptBtn.innerHTML = '<span>✓</span> Accepted';
+            
+            updateNextButton();
+        }
+
+        // Decline document
+        function declineDocument(type) {
+            acceptanceStatus[type] = false;
+            
+            const statusDiv = document.getElementById(type + 'Status');
+            const acceptBtn = document.getElementById(type + 'AcceptBtn');
+            
+            statusDiv.className = 'acceptance-status declined';
+            statusDiv.innerHTML = '<span>⚠️</span> You must accept this document to proceed with enrollment';
+            
+            acceptBtn.classList.remove('accepted');
+            acceptBtn.innerHTML = '<span>✓</span> I Accept';
+            
+            updateNextButton();
+            
+            // Show alert
+            setTimeout(() => {
+                alert('⚠️ Registration Cannot Proceed\n\nYou must accept both the Terms and Conditions and the Data Privacy Notice to enroll in the course.\n\nIf you have concerns about these documents, please contact us at support@dataanalysiscourse.com.');
+            }, 300);
+        }
+
+        // Print document
+        function printDocument(contentId) {
+            const content = document.getElementById(contentId).innerHTML;
+            const printWindow = window.open('', '_blank');
+            
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Print Document</title>
+                    <style>
+                        body {
+                            font-family: Arial, sans-serif;
+                            line-height: 1.6;
+                            padding: 2rem;
+                            color: #333;
+                        }
+                        h3 {
+                            color: #1a202c;
+                            margin-top: 1.5rem;
+                            margin-bottom: 0.8rem;
+                        }
+                        p {
+                            margin-bottom: 1rem;
+                        }
+                        ul {
+                            margin: 1rem 0 1rem 2rem;
+                        }
+                        li {
+                            margin: 0.5rem 0;
+                        }
+                        strong {
+                            font-weight: bold;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>${contentId === 'termsContent' ? 'Terms and Conditions' : 'Data Privacy Notice'}</h1>
+                    <p><strong>Introduction to Data Analysis Course</strong></p>
+                    <p><strong>Printed on:</strong> ${new Date().toLocaleDateString()}</p>
+                    <hr>
+                    ${content}
+                </body>
+                </html>
+            `);
+            
+            printWindow.document.close();
+            printWindow.focus();
+            
+            setTimeout(() => {
+                printWindow.print();
+            }, 250);
+        }
+
+        // Go back
+        function goBack() {
+            if (confirm('Are you sure you want to go back?\n\nYour registration information will not be saved.')) {
+                window.location.href = 'Student_Course_Landing_Page.html';
+            }
+        }
+
+        // Submit registration
+        function submitRegistration() {
+            const form = document.getElementById('registrationForm');
+            
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+            
+            if (!acceptanceStatus.terms || !acceptanceStatus.privacy) {
+                alert('⚠️ Please accept both the Terms and Conditions and the Data Privacy Notice to continue.');
+                return;
+            }
+            
+            // Collect form data
+            const formData = {
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                address: document.getElementById('address').value,
+                city: document.getElementById('city').value,
+                state: document.getElementById('state').value,
+                zip: document.getElementById('zip').value,
+                country: document.getElementById('country').value,
+                termsAccepted: acceptanceStatus.terms,
+                privacyAccepted: acceptanceStatus.privacy,
+                registrationDate: new Date().toISOString()
+            };
+            
+            console.log('Registration submitted:', formData);
+            
+            // Store in localStorage for demo purposes
+            localStorage.setItem('studentRegistration', JSON.stringify(formData));
+            
+            // Show success message
+            alert(`🎉 Registration Successful!\n\nWelcome ${formData.firstName} ${formData.lastName}!\n\nYou are now enrolled in the Introduction to Data Analysis course.\n\nIn production, this would:\n• Create your student account\n• Send confirmation email to ${formData.email}\n• Set up your course dashboard\n• Track your progress through lessons\n\nClick OK to begin your learning adventure!`);
+            
+            // Redirect to course overview
+            // window.location.href = 'Student_Course_Overview.html';
+        }
+
+        // Initialize
+        updateNextButton();
+    </script>
+</body>
+</html>
