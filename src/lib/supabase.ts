@@ -3,6 +3,12 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+console.log('Supabase Configuration:', {
+  hasUrl: !!supabaseUrl,
+  hasKey: !!supabaseAnonKey,
+  url: supabaseUrl ? supabaseUrl : 'undefined',
+});
+
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Supabase configuration error:', {
     hasUrl: !!supabaseUrl,
@@ -21,6 +27,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true
   }
 });
+
+console.log('Supabase client initialized successfully');
 
 export function validateSupabaseConfig(): { isValid: boolean; error?: string } {
   if (!supabaseUrl || !supabaseAnonKey) {

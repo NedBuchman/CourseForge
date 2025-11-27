@@ -12,10 +12,27 @@ function App() {
   const [currentCourseId, setCurrentCourseId] = useState<string | null>(null);
   const [currentCourseTitle, setCurrentCourseTitle] = useState<string>('');
   const [currentStudentId, setCurrentStudentId] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    console.log('CourseForge App Mounted Successfully');
+  }, []);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [currentPage]);
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading CourseForge...</p>
+        </div>
+      </div>
+    );
+  }
 
   const renderPage = () => {
     switch (currentPage) {
