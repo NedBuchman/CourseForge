@@ -29,6 +29,31 @@ interface VideoAsset {
   video_config: any;
 }
 
+interface VideoGenerationError {
+  assetId: string;
+  lessonNumber: string;
+  error: string;
+}
+
+function validateVideoConfig(config: any): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  if (!config) {
+    errors.push('video_config is null or undefined');
+    return { valid: false, errors };
+  }
+
+  if (!config.avatar_id && config.avatar_id !== '') {
+    errors.push('avatar_id is missing');
+  }
+
+  if (!config.voice_id && config.voice_id !== '') {
+    errors.push('voice_id is missing');
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
 async function stripHtml(html: string): Promise<string> {
   return html
     .replace(/<[^>]*>/g, ' ')
@@ -71,10 +96,18 @@ async function callHeyGenAPI(
   videoConfig: any,
   heygenApiKey: string
 ): Promise<{ video_id: string; status: string }> {
-  console.log('Calling HeyGen API with config:', { 
+  const validation = validateVideoConfig(videoConfig);
+  if (!validation.valid) {
+    console.error('Invalid video config:', validation.errors);
+    throw new Error(`Invalid video configuration: ${validation.errors.join(', ')}`);
+  }
+
+  console.log('Calling HeyGen API with config:', {
     avatarId: videoConfig.avatar_id,
     voiceId: videoConfig.voice_id,
-    scriptLength: script.length 
+    scriptLength: script.length,
+    apiKeyConfigured: !!heygenApiKey,
+    apiKeyLength: heygenApiKey?.length
   });
 
   const heygenRequest = {
@@ -103,6 +136,8 @@ async function callHeyGenAPI(
     test: false
   };
 
+  console.log('HeyGen API Request Payload:', JSON.stringify(heygenRequest, null, 2));
+
   const response = await fetch('https://api.heygen.com/v2/video/generate', {
     method: 'POST',
     headers: {
@@ -112,14 +147,27 @@ async function callHeyGenAPI(
     body: JSON.stringify(heygenRequest),
   });
 
+  const responseText = await response.text();
+  console.log('HeyGen API Response:', { status: response.status, body: responseText });
+
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error('HeyGen API error:', response.status, errorText);
-    throw new Error(`HeyGen API error (${response.status}): ${errorText}`);
+    console.error('HeyGen API error details:', {
+      status: response.status,
+      statusText: response.statusText,
+      body: responseText
+    });
+    throw new Error(`HeyGen API error (${response.status}): ${responseText}`);
   }
 
-  const data = await response.json();
-  console.log('HeyGen response:', data);
+  let data;
+  try {
+    data = JSON.parse(responseText);
+  } catch (parseError) {
+    console.error('Failed to parse HeyGen response:', parseError);
+    throw new Error(`Invalid JSON response from HeyGen: ${responseText}`);
+  }
+
+  console.log('HeyGen parsed response:', data);
 
   if (!data.data || !data.data.video_id) {
     throw new Error('Invalid HeyGen response: missing video_id');
@@ -275,10 +323,19 @@ Deno.serve(async (req: Request) => {
 
     let completedCount = 0;
     const totalVideos = videoAssets.length;
+    const failedVideos: VideoGenerationError[] = [];
+
+    console.log(`Starting video generation for ${totalVideos} assets`);
 
     for (const asset of videoAssets) {
       try {
-        console.log(`Generating video for asset ${asset.id}`);
+        console.log(`\n=== Processing asset ${asset.id} (Lesson ${asset.asset_reference_id}) ===`);
+        console.log('Asset details:', {
+          id: asset.id,
+          lessonNumber: asset.asset_reference_id,
+          scriptLength: asset.script_text?.length,
+          hasVideoConfig: !!asset.video_config
+        });
 
         await supabase
           .from('video_assets')
@@ -288,11 +345,17 @@ Deno.serve(async (req: Request) => {
           })
           .eq('id', asset.id);
 
+        console.log('Calling HeyGen API...');
         const heygenResult = await callHeyGenAPI(
           asset.script_text,
           asset.video_config,
           heygenApiKey
         );
+
+        console.log(`✅ Successfully submitted video for asset ${asset.id}:`, {
+          videoId: heygenResult.video_id,
+          status: heygenResult.status
+        });
 
         await supabase
           .from('video_assets')
@@ -314,7 +377,7 @@ Deno.serve(async (req: Request) => {
 
         completedCount++;
         const progress = 20 + Math.floor((completedCount / totalVideos) * 60);
-        
+
         await supabase
           .from('courses')
           .update({
@@ -327,8 +390,17 @@ Deno.serve(async (req: Request) => {
         await new Promise(resolve => setTimeout(resolve, 1000));
 
       } catch (videoError: any) {
-        console.error(`Error generating video for asset ${asset.id}:`, videoError);
-        
+        console.error(`❌ Error generating video for asset ${asset.id}:`, {
+          error: videoError.message,
+          stack: videoError.stack
+        });
+
+        failedVideos.push({
+          assetId: asset.id,
+          lessonNumber: asset.asset_reference_id,
+          error: videoError.message
+        });
+
         await supabase
           .from('video_assets')
           .update({
@@ -339,24 +411,41 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    console.log(`\n=== Video Generation Summary ===`);
+    console.log(`Total: ${totalVideos}, Success: ${completedCount}, Failed: ${failedVideos.length}`);
+
+    const finalStatus = completedCount > 0 ? 'processing' : 'failed';
+    const finalProgress = completedCount > 0 ? 85 : 0;
+    const finalStage = completedCount > 0
+      ? `Videos are processing at HeyGen (2-5 minutes)... ${completedCount}/${totalVideos} submitted`
+      : `All video submissions failed`;
+
     await supabase
       .from('courses')
       .update({
-        video_generation_progress: 85,
-        video_generation_stage: 'Videos are processing at HeyGen (2-5 minutes)...',
-        video_generation_status: 'processing'
+        video_generation_progress: finalProgress,
+        video_generation_stage: finalStage,
+        video_generation_status: finalStatus,
+        video_generation_error: failedVideos.length > 0 ? `${failedVideos.length} videos failed: ${failedVideos.map(f => `Lesson ${f.lessonNumber}: ${f.error}`).join('; ')}` : null
       })
       .eq('id', courseId);
 
-    console.log(`Video generation initiated successfully for ${completedCount} videos`);
+    console.log(`Video generation completed: ${completedCount}/${totalVideos} successful`);
+
+    if (failedVideos.length > 0) {
+      console.log('Failed videos:', failedVideos);
+    }
 
     return new Response(
       JSON.stringify({
-        success: true,
-        message: `Submitted ${completedCount} videos for generation`,
+        success: completedCount > 0,
+        message: `Submitted ${completedCount} of ${totalVideos} videos for generation`,
         videosSubmitted: completedCount,
         totalVideos: totalVideos,
-        status: 'processing'
+        failedCount: failedVideos.length,
+        failedVideos: failedVideos,
+        status: finalStatus,
+        details: failedVideos.length > 0 ? 'Some videos failed to submit. Check logs for details.' : 'All videos submitted successfully'
       }),
       {
         headers: {
