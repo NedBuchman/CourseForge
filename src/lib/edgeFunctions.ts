@@ -101,3 +101,37 @@ export async function chatRefinement(payload: {
     message: string;
   }>('chat-refinement', payload);
 }
+
+export async function generateLessonVideos(payload: {
+  courseId: string;
+  videoAssetIds?: string[];
+  regenerateAll?: boolean;
+}) {
+  return callEdgeFunction<{
+    success: boolean;
+    message: string;
+    videosSubmitted: number;
+    totalVideos: number;
+    status: string;
+  }>('generate-lesson-videos', payload);
+}
+
+export async function checkVideoStatus(payload: {
+  courseId: string;
+}) {
+  return callEdgeFunction<{
+    success: boolean;
+    status: string;
+    message: string;
+    stats?: {
+      total: number;
+      completed: number;
+      failed: number;
+      processing: number;
+    };
+    completed?: number;
+    failed?: number;
+    total?: number;
+    pending?: number;
+  }>('check-video-status', payload);
+}

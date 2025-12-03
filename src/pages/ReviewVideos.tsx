@@ -1,0 +1,473 @@
+import React, { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
+import { Video, CheckCircle, XCircle, RefreshCw, Clock, Eye, Download, Loader } from 'lucide-react';
+import Toast from '../components/Toast';
+
+interface VideoAsset {
+  id: string;
+  asset_type: string;
+  asset_reference_id: string;
+  video_url: string | null;
+  thumbnail_url: string | null;
+  duration_seconds: number;
+  generation_status: string;
+  generation_error: string | null;
+  script_text: string;
+  approved: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface ReviewVideosProps {
+  courseId: string;
+  onComplete: () => void;
+  onBack: () => void;
+}
+
+const ReviewVideos: React.FC<ReviewVideosProps> = ({ courseId, onComplete, onBack }) => {
+  const [videos, setVideos] = useState<VideoAsset[]>([]);
+  const [selectedVideo, setSelectedVideo] = useState<VideoAsset | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [regenerating, setRegenerating] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [courseTitle, setCourseTitle] = useState('');
+  const [videoStats, setVideoStats] = useState({
+    total: 0,
+    completed: 0,
+    processing: 0,
+    failed: 0,
+    approved: 0
+  });
+
+  useEffect(() => {
+    loadVideos();
+    loadCourseInfo();
+  }, [courseId]);
+
+  const loadCourseInfo = async () => {
+    const { data } = await supabase
+      .from('courses')
+      .select('title')
+      .eq('id', courseId)
+      .single();
+
+    if (data) {
+      setCourseTitle(data.title);
+    }
+  };
+
+  const loadVideos = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('video_assets')
+        .select('*')
+        .eq('course_id', courseId)
+        .order('asset_reference_id', { ascending: true });
+
+      if (error) throw error;
+
+      if (data) {
+        setVideos(data);
+        calculateStats(data);
+      }
+    } catch (error: any) {
+      console.error('Error loading videos:', error);
+      setToast({ message: 'Failed to load videos', type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateStats = (videoList: VideoAsset[]) => {
+    const stats = {
+      total: videoList.length,
+      completed: videoList.filter(v => v.generation_status === 'completed').length,
+      processing: videoList.filter(v => v.generation_status === 'processing').length,
+      failed: videoList.filter(v => v.generation_status === 'failed').length,
+      approved: videoList.filter(v => v.approved).length
+    };
+    setVideoStats(stats);
+  };
+
+  const handleRegenerateVideo = async (videoId: string) => {
+    setRegenerating(videoId);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-lesson-videos`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            courseId,
+            videoAssetIds: [videoId],
+            regenerateAll: false
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to regenerate video');
+      }
+
+      setToast({ message: 'Video regeneration started. This will take 2-5 minutes.', type: 'info' });
+
+      setTimeout(() => {
+        loadVideos();
+      }, 3000);
+    } catch (error: any) {
+      console.error('Error regenerating video:', error);
+      setToast({ message: error.message || 'Failed to regenerate video', type: 'error' });
+    } finally {
+      setRegenerating(null);
+    }
+  };
+
+  const handleApproveVideo = async (videoId: string, approved: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('video_assets')
+        .update({
+          approved,
+          approved_at: approved ? new Date().toISOString() : null
+        })
+        .eq('id', videoId);
+
+      if (error) throw error;
+
+      setToast({
+        message: approved ? 'Video approved' : 'Video approval removed',
+        type: 'success'
+      });
+      loadVideos();
+    } catch (error: any) {
+      console.error('Error updating video:', error);
+      setToast({ message: 'Failed to update video', type: 'error' });
+    }
+  };
+
+  const handleCompleteReview = async () => {
+    const allApproved = videos.every(v => v.approved || v.generation_status === 'failed');
+
+    if (!allApproved) {
+      setToast({
+        message: 'Please approve or regenerate all videos before continuing',
+        type: 'error'
+      });
+      return;
+    }
+
+    onComplete();
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return (
+          <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+            <CheckCircle className="w-4 h-4" />
+            Completed
+          </span>
+        );
+      case 'processing':
+        return (
+          <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+            <Clock className="w-4 h-4" />
+            Processing
+          </span>
+        );
+      case 'failed':
+        return (
+          <span className="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">
+            <XCircle className="w-4 h-4" />
+            Failed
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-slate-800 rounded-full text-sm font-medium">
+            <Clock className="w-4 h-4" />
+            Queued
+          </span>
+        );
+    }
+  };
+
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-12 px-4">
+        <div className="max-w-6xl mx-auto text-center">
+          <Loader className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-slate-600">Loading videos...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-12 px-4">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <button
+            onClick={onBack}
+            className="text-blue-600 hover:text-blue-700 font-medium mb-4"
+          >
+            ← Back to Course
+          </button>
+
+          <h1 className="text-4xl font-bold text-slate-900 mb-2">Review Course Videos</h1>
+          <p className="text-xl text-slate-600">{courseTitle}</p>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="text-3xl font-bold text-slate-900">{videoStats.total}</div>
+            <div className="text-sm text-slate-600">Total Videos</div>
+          </div>
+          <div className="bg-green-50 rounded-xl p-4 shadow-sm">
+            <div className="text-3xl font-bold text-green-700">{videoStats.completed}</div>
+            <div className="text-sm text-green-700">Completed</div>
+          </div>
+          <div className="bg-blue-50 rounded-xl p-4 shadow-sm">
+            <div className="text-3xl font-bold text-blue-700">{videoStats.processing}</div>
+            <div className="text-sm text-blue-700">Processing</div>
+          </div>
+          <div className="bg-red-50 rounded-xl p-4 shadow-sm">
+            <div className="text-3xl font-bold text-red-700">{videoStats.failed}</div>
+            <div className="text-sm text-red-700">Failed</div>
+          </div>
+          <div className="bg-slate-50 rounded-xl p-4 shadow-sm">
+            <div className="text-3xl font-bold text-slate-700">{videoStats.approved}</div>
+            <div className="text-sm text-slate-700">Approved</div>
+          </div>
+        </div>
+
+        {videoStats.processing > 0 && (
+          <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-4 mb-6">
+            <div className="flex items-center gap-3">
+              <Loader className="w-5 h-5 animate-spin text-blue-700" />
+              <div>
+                <p className="font-bold text-blue-900">Videos are still processing</p>
+                <p className="text-sm text-blue-800">
+                  {videoStats.processing} video{videoStats.processing !== 1 ? 's' : ''} currently being generated.
+                  This page will auto-refresh when they're ready.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+          <h2 className="text-2xl font-bold text-slate-900 mb-6">All Videos</h2>
+
+          <div className="space-y-4">
+            {videos.map((video) => (
+              <div
+                key={video.id}
+                className="border-2 border-slate-200 rounded-xl p-6 hover:border-blue-300 transition-colors"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0">
+                    {video.video_url && video.thumbnail_url ? (
+                      <img
+                        src={video.thumbnail_url}
+                        alt={`Lesson ${video.asset_reference_id}`}
+                        className="w-32 h-18 object-cover rounded-lg cursor-pointer"
+                        onClick={() => setSelectedVideo(video)}
+                      />
+                    ) : (
+                      <div className="w-32 h-18 bg-slate-100 rounded-lg flex items-center justify-center">
+                        <Video className="w-8 h-8 text-slate-400" />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-lg font-bold text-slate-900">
+                        Lesson {video.asset_reference_id}
+                      </h3>
+                      {getStatusBadge(video.generation_status)}
+                      {video.approved && (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                          <CheckCircle className="w-4 h-4" />
+                          Approved
+                        </span>
+                      )}
+                    </div>
+
+                    {video.duration_seconds > 0 && (
+                      <p className="text-sm text-slate-600 mb-2">
+                        Duration: {formatDuration(video.duration_seconds)}
+                      </p>
+                    )}
+
+                    <p className="text-sm text-slate-600 line-clamp-2 mb-3">
+                      {video.script_text.substring(0, 150)}...
+                    </p>
+
+                    {video.generation_error && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-3">
+                        <p className="text-sm text-red-800">
+                          <strong>Error:</strong> {video.generation_error}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap gap-2">
+                      {video.video_url && video.generation_status === 'completed' && (
+                        <>
+                          <button
+                            onClick={() => setSelectedVideo(video)}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                          >
+                            <Eye className="w-4 h-4" />
+                            Preview
+                          </button>
+
+                          {!video.approved ? (
+                            <button
+                              onClick={() => handleApproveVideo(video.id, true)}
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                              Approve
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleApproveVideo(video.id, false)}
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-slate-300 text-slate-700 rounded-lg hover:bg-slate-400 transition-colors text-sm font-medium"
+                            >
+                              Remove Approval
+                            </button>
+                          )}
+                        </>
+                      )}
+
+                      {(video.generation_status === 'failed' || video.approved === false) && (
+                        <button
+                          onClick={() => handleRegenerateVideo(video.id)}
+                          disabled={regenerating === video.id}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm font-medium disabled:opacity-50"
+                        >
+                          {regenerating === video.id ? (
+                            <Loader className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <RefreshCw className="w-4 h-4" />
+                          )}
+                          Regenerate
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex justify-between items-center">
+          <button
+            onClick={onBack}
+            className="px-6 py-3 bg-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-300 transition-colors"
+          >
+            Back
+          </button>
+
+          <button
+            onClick={handleCompleteReview}
+            className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors"
+          >
+            Complete Review & Continue
+          </button>
+        </div>
+      </div>
+
+      {selectedVideo && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedVideo(null)}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 max-w-4xl w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-2xl font-bold text-slate-900">
+                Lesson {selectedVideo.asset_reference_id} Video
+              </h3>
+              <button
+                onClick={() => setSelectedVideo(null)}
+                className="text-slate-500 hover:text-slate-700"
+              >
+                ✕
+              </button>
+            </div>
+
+            {selectedVideo.video_url && (
+              <video
+                controls
+                autoPlay
+                className="w-full rounded-lg mb-4"
+                src={selectedVideo.video_url}
+              >
+                Your browser does not support video playback.
+              </video>
+            )}
+
+            <div className="bg-slate-50 rounded-lg p-4 mb-4">
+              <h4 className="font-bold text-slate-900 mb-2">Video Script:</h4>
+              <p className="text-sm text-slate-700 whitespace-pre-wrap">
+                {selectedVideo.script_text}
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setSelectedVideo(null)}
+                className="flex-1 px-6 py-3 bg-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-300 transition-colors"
+              >
+                Close
+              </button>
+
+              {selectedVideo.video_url && (
+                <a
+                  href={selectedVideo.video_url}
+                  download
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors"
+                >
+                  <Download className="w-5 h-5" />
+                  Download Video
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+    </div>
+  );
+};
+
+export default ReviewVideos;

@@ -693,7 +693,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
         try {
           const { data: courseData, error: pollError } = await supabase
             .from('courses')
-            .select('status, generation_progress, generation_stage, generated_content, generation_error, current_lesson_generating')
+            .select('status, generation_progress, generation_stage, generated_content, generation_error, current_lesson_generating, content_format, video_generation_status, video_generation_progress, video_generation_stage, videos_generated_count, videos_total_count')
             .eq('id', courseId)
             .single();
 
@@ -715,6 +715,20 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
 
             if (!courseData.generated_content || !courseData.generated_content.lessons) {
               throw new Error('Course completed but content is missing');
+            }
+
+            if (courseData.content_format === 'video' && courseData.video_generation_status === 'in_progress') {
+              const videoProgress = courseData.video_generation_progress || 0;
+              const videoStage = courseData.video_generation_stage || 'Generating videos...';
+              setGenerationProgress(Math.min(videoProgress, 99));
+              setGenerationStage(`${videoStage} (${courseData.videos_generated_count || 0}/${courseData.videos_total_count || 0} videos)`);
+              return false;
+            }
+
+            if (courseData.content_format === 'video' && courseData.video_generation_status === 'processing') {
+              setGenerationProgress(85);
+              setGenerationStage(`Videos are processing at HeyGen (${courseData.videos_generated_count || 0}/${courseData.videos_total_count || 0} completed)...`);
+              return false;
             }
 
             setGenerationProgress(100);
@@ -742,17 +756,51 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
         }
       };
 
+      let videoStatusInterval: NodeJS.Timeout | null = null;
+
+      const checkVideoGenerationStatus = async () => {
+        try {
+          const { checkVideoStatus } = await import('../lib/edgeFunctions');
+          const result = await checkVideoStatus({ courseId });
+          console.log('Video status check result:', result);
+        } catch (error) {
+          console.error('Error checking video status:', error);
+        }
+      };
+
       const startPolling = async () => {
         while (pollAttempts < maxPollAttempts) {
           try {
             const isComplete = await pollForCompletion();
+
+            const { data: currentCourse } = await supabase
+              .from('courses')
+              .select('content_format, video_generation_status')
+              .eq('id', courseId)
+              .single();
+
+            if (currentCourse?.content_format === 'video' &&
+                (currentCourse.video_generation_status === 'processing' || currentCourse.video_generation_status === 'in_progress') &&
+                !videoStatusInterval) {
+              videoStatusInterval = setInterval(checkVideoGenerationStatus, 30000);
+            }
+
             if (isComplete) {
+              if (videoStatusInterval) {
+                clearInterval(videoStatusInterval);
+              }
               return;
             }
             await new Promise(resolve => setTimeout(resolve, pollInterval));
           } catch (error) {
+            if (videoStatusInterval) {
+              clearInterval(videoStatusInterval);
+            }
             throw error;
           }
+        }
+        if (videoStatusInterval) {
+          clearInterval(videoStatusInterval);
         }
       };
 

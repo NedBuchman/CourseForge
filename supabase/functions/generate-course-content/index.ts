@@ -354,6 +354,34 @@ Deno.serve(async (req: Request) => {
 
     console.log("Course content generated and saved successfully");
 
+    if (updatedCourse.content_format === 'video' && updatedCourse.video_config?.enabled) {
+      console.log("Video mode enabled, triggering video generation...");
+
+      try {
+        const videoGenUrl = `${supabaseUrl}/functions/v1/generate-lesson-videos`;
+        const videoGenResponse = await fetch(videoGenUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            courseId: courseId,
+            regenerateAll: false
+          }),
+        });
+
+        if (videoGenResponse.ok) {
+          console.log("Video generation initiated successfully");
+        } else {
+          const errorText = await videoGenResponse.text();
+          console.error("Failed to trigger video generation:", errorText);
+        }
+      } catch (videoError: any) {
+        console.error("Error triggering video generation:", videoError.message);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
