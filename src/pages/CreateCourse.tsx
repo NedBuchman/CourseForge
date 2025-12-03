@@ -94,6 +94,9 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
     duration: '',
     objectives: '',
     context: '',
+    contentFormat: 'text',
+    videoAvatarId: 'eric_public_3_20220815',
+    videoVoiceId: 'en-US-GuyNeural',
   });
 
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -197,6 +200,9 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
       duration: '',
       objectives: '',
       context: '',
+      contentFormat: 'text',
+      videoAvatarId: 'eric_public_3_20220815',
+      videoVoiceId: 'en-US-GuyNeural',
     });
     setUploadedFiles([]);
     setRestrictToFiles(false);
@@ -533,6 +539,17 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
         landing_page_status: 'not_configured',
         published_status: 'not_published',
         downloaded_status: 'not_downloaded',
+        content_format: formData.contentFormat,
+        video_config: {
+          enabled: formData.contentFormat === 'video',
+          avatar_id: formData.videoAvatarId,
+          voice_id: formData.videoVoiceId,
+          background_style: 'professional',
+          include_lesson_videos: true,
+          include_quiz_explanation_videos: true
+        },
+        video_generation_status: 'not_started',
+        video_generation_progress: 0,
       };
 
       if (selectedCourse?.id) {
@@ -1043,7 +1060,10 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
       difficulty: '',
       duration: '',
       objectives: '',
-      context: ''
+      context: '',
+      contentFormat: 'text',
+      videoAvatarId: 'eric_public_3_20220815',
+      videoVoiceId: 'en-US-GuyNeural',
     });
     setShowQuizGeneration(false);
     setShowPresentationGeneration(false);
@@ -1559,6 +1579,124 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
                     <option value="3-hours">3 hours - In-depth coverage</option>
                     <option value="4-hours">4+ hours - Complete mastery</option>
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-lg font-bold text-slate-900 mb-2">
+                    Do you want text or video course content? <span className="text-red-500">*</span>
+                  </label>
+                  <p className="text-slate-600 mb-3">Choose how your lessons will be delivered to students.</p>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <label className="relative cursor-pointer">
+                      <input
+                        type="radio"
+                        name="contentFormat"
+                        value="text"
+                        checked={formData.contentFormat === 'text'}
+                        onChange={(e) => handleInputChange('contentFormat', e.target.value)}
+                        className="sr-only"
+                      />
+                      <div className={`border-2 rounded-xl p-6 transition-all ${
+                        formData.contentFormat === 'text'
+                          ? 'border-blue-600 bg-blue-50 shadow-lg'
+                          : 'border-slate-300 bg-slate-50 hover:border-slate-400'
+                      }`}>
+                        <div className="text-4xl mb-3">📝</div>
+                        <div className="font-bold text-slate-900 text-lg mb-2">Text-Based Course</div>
+                        <div className="text-sm text-slate-600 mb-3">Traditional written lessons that students can read at their own pace</div>
+                        <ul className="text-xs text-slate-600 space-y-1">
+                          <li>✓ Fast generation (1-2 minutes)</li>
+                          <li>✓ Easy to skim and reference</li>
+                          <li>✓ Lower bandwidth requirements</li>
+                          <li>✓ Quick to update and edit</li>
+                        </ul>
+                      </div>
+                    </label>
+
+                    <label className="relative cursor-pointer">
+                      <input
+                        type="radio"
+                        name="contentFormat"
+                        value="video"
+                        checked={formData.contentFormat === 'video'}
+                        onChange={(e) => handleInputChange('contentFormat', e.target.value)}
+                        className="sr-only"
+                      />
+                      <div className={`border-2 rounded-xl p-6 transition-all ${
+                        formData.contentFormat === 'video'
+                          ? 'border-blue-600 bg-blue-50 shadow-lg'
+                          : 'border-slate-300 bg-slate-50 hover:border-slate-400'
+                      }`}>
+                        <div className="text-4xl mb-3">🎥</div>
+                        <div className="font-bold text-slate-900 text-lg mb-2">Video-Enhanced Course</div>
+                        <div className="text-sm text-slate-600 mb-3">AI avatar instructor narrates each lesson on-camera</div>
+                        <ul className="text-xs text-slate-600 space-y-1">
+                          <li>✓ More engaging for students</li>
+                          <li>✓ Professional AI instructor avatar</li>
+                          <li>✓ Natural voice narration</li>
+                          <li>✓ Generation time: +5-10 minutes</li>
+                        </ul>
+                      </div>
+                    </label>
+                  </div>
+
+                  {formData.contentFormat === 'video' && (
+                    <div className="mt-4 bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-300 rounded-xl p-6">
+                      <div className="flex items-start gap-3 mb-4">
+                        <Sparkles className="w-6 h-6 text-blue-700 flex-shrink-0 mt-1" />
+                        <div>
+                          <h3 className="font-bold text-blue-900 text-lg mb-2">Video Generation Settings</h3>
+                          <p className="text-blue-800 text-sm mb-4">
+                            Your course content will be narrated by an AI avatar instructor. Choose your preferred avatar and voice style.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-sm font-bold text-blue-900 mb-2">
+                            AI Avatar Instructor
+                          </label>
+                          <select
+                            value={formData.videoAvatarId}
+                            onChange={(e) => handleInputChange('videoAvatarId', e.target.value)}
+                            className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:border-blue-600 focus:outline-none bg-white"
+                          >
+                            <option value="eric_public_3_20220815">Eric - Professional Male (Recommended)</option>
+                            <option value="josh_lite3_20230714">Josh - Friendly Male</option>
+                            <option value="anna_public_3_20240108">Anna - Professional Female</option>
+                            <option value="lisa_public_2_20240222">Lisa - Friendly Female</option>
+                          </select>
+                          <p className="text-xs text-blue-700 mt-1">The AI avatar that will present your lessons</p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-bold text-blue-900 mb-2">
+                            Voice Style
+                          </label>
+                          <select
+                            value={formData.videoVoiceId}
+                            onChange={(e) => handleInputChange('videoVoiceId', e.target.value)}
+                            className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:border-blue-600 focus:outline-none bg-white"
+                          >
+                            <option value="en-US-GuyNeural">US English - Male (Professional)</option>
+                            <option value="en-US-JennyNeural">US English - Female (Friendly)</option>
+                            <option value="en-GB-RyanNeural">British English - Male</option>
+                            <option value="en-GB-SoniaNeural">British English - Female</option>
+                            <option value="en-AU-WilliamNeural">Australian English - Male</option>
+                          </select>
+                          <p className="text-xs text-blue-700 mt-1">Natural-sounding AI voice narration</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 bg-white border-2 border-blue-200 rounded-lg p-4">
+                        <p className="text-sm text-blue-900">
+                          <strong>Note:</strong> Video generation adds 5-10 minutes to course creation time.
+                          You'll be able to preview and regenerate any videos before publishing.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div>
