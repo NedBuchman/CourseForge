@@ -371,7 +371,7 @@ Deno.serve(async (req: Request) => {
           },
           body: JSON.stringify({
             courseId: courseId,
-            regenerateAll: false
+            regenerateAll: true
           }),
         });
 
