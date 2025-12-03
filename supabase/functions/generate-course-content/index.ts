@@ -353,12 +353,16 @@ Deno.serve(async (req: Request) => {
     }
 
     console.log("Course content generated and saved successfully");
+    console.log("Course content_format:", updatedCourse.content_format);
+    console.log("Course video_config:", JSON.stringify(updatedCourse.video_config));
 
     if (updatedCourse.content_format === 'video' && updatedCourse.video_config?.enabled) {
-      console.log("Video mode enabled, triggering video generation...");
+      console.log("✅ Video mode enabled, triggering video generation...");
 
       try {
         const videoGenUrl = `${supabaseUrl}/functions/v1/generate-lesson-videos`;
+        console.log("Calling video generation at:", videoGenUrl);
+
         const videoGenResponse = await fetch(videoGenUrl, {
           method: 'POST',
           headers: {
@@ -372,14 +376,17 @@ Deno.serve(async (req: Request) => {
         });
 
         if (videoGenResponse.ok) {
-          console.log("Video generation initiated successfully");
+          const videoResult = await videoGenResponse.json();
+          console.log("✅ Video generation initiated successfully:", videoResult);
         } else {
           const errorText = await videoGenResponse.text();
-          console.error("Failed to trigger video generation:", errorText);
+          console.error("❌ Failed to trigger video generation:", errorText);
         }
       } catch (videoError: any) {
-        console.error("Error triggering video generation:", videoError.message);
+        console.error("❌ Error triggering video generation:", videoError.message);
       }
+    } else {
+      console.log("ℹ️ Video mode NOT enabled. content_format:", updatedCourse.content_format, "video_config.enabled:", updatedCourse.video_config?.enabled);
     }
 
     return new Response(
