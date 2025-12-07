@@ -544,7 +544,8 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
           enabled: formData.contentFormat === 'video',
           avatar_id: formData.videoAvatarId,
           voice_id: formData.videoVoiceId,
-          background_style: 'professional',
+          background_style: 'color',
+          background_color: '#f0f4f8',
           include_lesson_videos: true,
           include_quiz_explanation_videos: true
         },
