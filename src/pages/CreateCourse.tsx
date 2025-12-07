@@ -237,6 +237,9 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
         duration: data.duration || '',
         objectives: data.learning_objectives || '',
         context: data.additional_context || '',
+        contentFormat: data.content_format || 'text',
+        videoAvatarId: data.video_config?.avatar_id || 'Adrian_public_3_20240312',
+        videoVoiceId: data.video_config?.voice_id || '75af67cc2ceb498681d0085bb56bddc3',
       });
 
       setChatMessages(data.chat_history || []);
