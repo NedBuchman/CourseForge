@@ -114,13 +114,13 @@ async function callHeyGenAPI(
     video_inputs: [{
       character: {
         type: 'avatar',
-        avatar_id: videoConfig.avatar_id || 'eric_public_3_20220815',
+        avatar_id: videoConfig.avatar_id || 'Adrian_public_3_20240312',
         avatar_style: videoConfig.avatar_style || 'normal'
       },
       voice: {
         type: 'text',
         input_text: script,
-        voice_id: videoConfig.voice_id || 'en-US-GuyNeural',
+        voice_id: videoConfig.voice_id || '75af67cc2ceb498681d0085bb56bddc3',
         speed: 1.0
       },
       background: {

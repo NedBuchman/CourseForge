@@ -96,7 +96,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
     context: '',
     contentFormat: 'text',
     videoAvatarId: 'Adrian_public_3_20240312',
-    videoVoiceId: 'en-US-GuyNeural',
+    videoVoiceId: '75af67cc2ceb498681d0085bb56bddc3',
   });
 
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -202,7 +202,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
       context: '',
       contentFormat: 'text',
       videoAvatarId: 'Adrian_public_3_20240312',
-      videoVoiceId: 'en-US-GuyNeural',
+      videoVoiceId: '75af67cc2ceb498681d0085bb56bddc3',
     });
     setUploadedFiles([]);
     setRestrictToFiles(false);
@@ -1112,7 +1112,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
       context: '',
       contentFormat: 'text',
       videoAvatarId: 'Adrian_public_3_20240312',
-      videoVoiceId: 'en-US-GuyNeural',
+      videoVoiceId: '75af67cc2ceb498681d0085bb56bddc3',
     });
     setShowQuizGeneration(false);
     setShowPresentationGeneration(false);
@@ -1728,11 +1728,11 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
                             onChange={(e) => handleInputChange('videoVoiceId', e.target.value)}
                             className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:border-blue-600 focus:outline-none bg-white"
                           >
-                            <option value="en-US-GuyNeural">US English - Male (Professional)</option>
-                            <option value="en-US-JennyNeural">US English - Female (Friendly)</option>
-                            <option value="en-GB-RyanNeural">British English - Male</option>
-                            <option value="en-GB-SoniaNeural">British English - Female</option>
-                            <option value="en-AU-WilliamNeural">Australian English - Male</option>
+                            <option value="75af67cc2ceb498681d0085bb56bddc3">Mason Finn - Professional Male (Recommended)</option>
+                            <option value="77a8b81df32f482f851684c5e2ebb0d2">Calm Chloe - Female</option>
+                            <option value="79d9a0758b1f406ebe8ac3e52e09adb1">Relaxed Ray - Male</option>
+                            <option value="748d08eb00634e03b17c524d1e957fc6">June - Female (Lifelike)</option>
+                            <option value="75a5a6de69204dc9ba448158d1b6a8de">Dominic - Male</option>
                           </select>
                           <p className="text-xs text-blue-700 mt-1">Natural-sounding AI voice narration</p>
                         </div>
