@@ -95,7 +95,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
     objectives: '',
     context: '',
     contentFormat: 'text',
-    videoAvatarId: 'eric_public_3_20220815',
+    videoAvatarId: 'Adrian_public_3_20240312',
     videoVoiceId: 'en-US-GuyNeural',
   });
 
@@ -201,7 +201,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
       objectives: '',
       context: '',
       contentFormat: 'text',
-      videoAvatarId: 'eric_public_3_20220815',
+      videoAvatarId: 'Adrian_public_3_20240312',
       videoVoiceId: 'en-US-GuyNeural',
     });
     setUploadedFiles([]);
@@ -1111,7 +1111,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
       objectives: '',
       context: '',
       contentFormat: 'text',
-      videoAvatarId: 'eric_public_3_20220815',
+      videoAvatarId: 'Adrian_public_3_20240312',
       videoVoiceId: 'en-US-GuyNeural',
     });
     setShowQuizGeneration(false);
@@ -1711,10 +1711,10 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
                             onChange={(e) => handleInputChange('videoAvatarId', e.target.value)}
                             className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:border-blue-600 focus:outline-none bg-white"
                           >
-                            <option value="eric_public_3_20220815">Eric - Professional Male (Recommended)</option>
-                            <option value="josh_lite3_20230714">Josh - Friendly Male</option>
-                            <option value="anna_public_3_20240108">Anna - Professional Female</option>
-                            <option value="lisa_public_2_20240222">Lisa - Friendly Female</option>
+                            <option value="Adrian_public_3_20240312">Adrian - Professional Male (Recommended)</option>
+                            <option value="Andrew_public_pro1_20230614">Alex - Business Male</option>
+                            <option value="Anna_public_20240108">Anna - Professional Female</option>
+                            <option value="Amanda_in_Blue_Shirt_Front">Amanda - Business Female</option>
                           </select>
                           <p className="text-xs text-blue-700 mt-1">The AI avatar that will present your lessons</p>
                         </div>

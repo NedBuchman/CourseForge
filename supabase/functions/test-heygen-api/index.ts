@@ -48,7 +48,7 @@ Deno.serve(async (req: Request) => {
       video_inputs: [{
         character: {
           type: 'avatar',
-          avatar_id: 'eric_public_3_20220815',
+          avatar_id: 'Adrian_public_3_20240312',
           avatar_style: 'normal'
         },
         voice: {
