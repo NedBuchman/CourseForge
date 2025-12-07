@@ -31,6 +31,7 @@ const ReviewVideos: React.FC<ReviewVideosProps> = ({ courseId, onComplete, onBac
   const [regenerating, setRegenerating] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [courseTitle, setCourseTitle] = useState('');
+  const [videoConfig, setVideoConfig] = useState<any>(null);
   const [videoStats, setVideoStats] = useState({
     total: 0,
     completed: 0,
@@ -47,12 +48,13 @@ const ReviewVideos: React.FC<ReviewVideosProps> = ({ courseId, onComplete, onBac
   const loadCourseInfo = async () => {
     const { data } = await supabase
       .from('courses')
-      .select('title')
+      .select('title, video_config')
       .eq('id', courseId)
       .single();
 
     if (data) {
       setCourseTitle(data.title);
+      setVideoConfig(data.video_config);
     }
   };
 
@@ -207,6 +209,11 @@ const ReviewVideos: React.FC<ReviewVideosProps> = ({ courseId, onComplete, onBac
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const hasIncompleteVideoConfig = () => {
+    if (!videoConfig) return true;
+    return !videoConfig.avatar_id || !videoConfig.voice_id;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-12 px-4">
@@ -255,6 +262,24 @@ const ReviewVideos: React.FC<ReviewVideosProps> = ({ courseId, onComplete, onBac
             <div className="text-sm text-slate-700">Approved</div>
           </div>
         </div>
+
+        {hasIncompleteVideoConfig() && (
+          <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center text-white text-sm font-bold">!</div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-amber-900 mb-1">Incomplete Video Configuration</h3>
+                <p className="text-sm text-amber-800 mb-3">
+                  Your course's video configuration is missing required settings (avatar and voice).
+                  Videos may use default settings, which might not match your preferred style.
+                </p>
+                <p className="text-sm text-amber-800">
+                  <strong>To fix this:</strong> Go back to "Create Course" and regenerate this course, selecting "Video" format and configuring your preferred avatar and voice settings.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {videoStats.processing > 0 && (
           <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-4 mb-6">
