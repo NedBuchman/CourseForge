@@ -485,27 +485,48 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
       let progressInterval = simulateProgress(0, 10, 2000, 'Preparing files...');
 
       let fileUrls: string[] = [];
+      const uploadedFileContents: string[] = [];
+
       if (uploadedFiles.length > 0) {
+        setGenerationStage(`Reading ${uploadedFiles.length} uploaded file${uploadedFiles.length > 1 ? 's' : ''}...`);
+
         for (const file of uploadedFiles) {
-          const fileExt = file.name.split('.').pop();
-          const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+          try {
+            const fileText = await file.text();
+            if (fileText.trim().length === 0) {
+              console.warn(`File ${file.name} is empty, skipping`);
+              continue;
+            }
+            uploadedFileContents.push(fileText);
 
-          const { error: uploadError } = await supabase.storage
-            .from('course-materials')
-            .upload(fileName, file);
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
-          if (uploadError) {
-            clearInterval(progressInterval);
-            console.error('Storage upload error:', uploadError);
-            throw new Error(`Failed to upload file ${file.name}: ${uploadError.message}`);
+            const { error: uploadError } = await supabase.storage
+              .from('course-materials')
+              .upload(fileName, file);
+
+            if (uploadError) {
+              console.error('Storage upload error for', file.name, ':', uploadError);
+            } else {
+              fileUrls.push(fileName);
+            }
+          } catch (err) {
+            console.error(`Error reading file ${file.name}:`, err);
           }
-
-          const { data: { publicUrl } } = supabase.storage
-            .from('course-materials')
-            .getPublicUrl(fileName);
-
-          fileUrls.push(publicUrl);
         }
+
+        if (uploadedFileContents.length === 0) {
+          clearInterval(progressInterval);
+          throw new Error('Failed to read any of the uploaded files. Please ensure the files are valid text documents and try uploading again.');
+        }
+
+        const totalWords = uploadedFileContents.reduce((sum, content) =>
+          sum + content.split(/\s+/).length, 0
+        );
+        console.log(`Successfully loaded ${uploadedFileContents.length} file(s) with ${totalWords.toLocaleString()} words`);
+        setGenerationStage(`Loaded ${uploadedFileContents.length} file(s) (${totalWords.toLocaleString()} words)`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
       clearInterval(progressInterval);
@@ -598,42 +619,6 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
 
       clearInterval(progressInterval);
       setGenerationProgress(15);
-
-      const uploadedFileContents: string[] = [];
-      if (fileUrls.length > 0) {
-        setGenerationStage(`Reading ${fileUrls.length} uploaded reference file${fileUrls.length > 1 ? 's' : ''}...`);
-
-        for (let i = 0; i < fileUrls.length; i++) {
-          const url = fileUrls[i];
-          try {
-            const fileResponse = await fetch(url);
-            if (!fileResponse.ok) {
-              console.error(`Failed to fetch file from ${url}: ${fileResponse.status}`);
-              continue;
-            }
-            const fileText = await fileResponse.text();
-            if (fileText.trim().length === 0) {
-              console.warn(`File at ${url} is empty`);
-              continue;
-            }
-            uploadedFileContents.push(fileText);
-          } catch (err) {
-            console.error('Error reading file:', err);
-          }
-        }
-
-        const totalWords = uploadedFileContents.reduce((sum, content) =>
-          sum + content.split(/\s+/).length, 0
-        );
-
-        if (uploadedFileContents.length === 0) {
-          throw new Error('Failed to read any of the uploaded files. Please try uploading again.');
-        }
-
-        console.log(`Successfully loaded ${uploadedFileContents.length} reference file(s) with ${totalWords.toLocaleString()} words`);
-        setGenerationStage(`Loaded ${uploadedFileContents.length} reference file(s) (${totalWords.toLocaleString()} words)`);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
 
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
