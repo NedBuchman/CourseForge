@@ -187,7 +187,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
 
           <div className="text-center bg-gradient-to-r from-blue-600 to-blue-700 text-white p-8 rounded-2xl shadow-xl">
             <p className="text-3xl font-bold">
-              Professional course in under <span className="text-yellow-400">5 minutes</span>
+              Professional quality courses in under <span className="text-yellow-400">15 minutes</span>
             </p>
           </div>
         </div>
