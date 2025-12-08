@@ -696,7 +696,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
       console.log('Course ID:', courseId);
 
       const edgeFunctionController = new AbortController();
-      const edgeFunctionTimeoutId = setTimeout(() => edgeFunctionController.abort(), 30000);
+      const edgeFunctionTimeoutId = setTimeout(() => edgeFunctionController.abort(), 600000); // 10 minutes
 
       try {
         console.log('Making request to:', edgeFunctionUrl);
