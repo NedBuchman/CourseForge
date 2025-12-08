@@ -31,7 +31,31 @@ const parseOptions = (content: string): ParsedOption[] | null => {
 
   const potentialOptions = lines.filter(line => {
     const trimmed = line.trim();
-    return numberedPattern.test(trimmed) || bulletPattern.test(trimmed) || markedPattern.test(trimmed);
+
+    // Skip character count lines like "(67 characters)*"
+    if (/^\(\d+\s*characters?\)\*?$/i.test(trimmed)) {
+      return false;
+    }
+
+    // Skip lines that are just labels like "*Value Proposition 1:" or "Option 1:"
+    if (/^[*\s]*(?:Value Proposition|Option|Title|Description)\s*\d*\s*:?\s*$/i.test(trimmed)) {
+      return false;
+    }
+
+    // Check if line starts with number, bullet, or markdown
+    const hasMarker = numberedPattern.test(trimmed) || bulletPattern.test(trimmed) || markedPattern.test(trimmed);
+    if (!hasMarker) {
+      return false;
+    }
+
+    // Remove markers to check content length
+    let contentOnly = trimmed.replace(/^(\d+[\.)]\s*)/, '');
+    contentOnly = contentOnly.replace(/^([-*•]\s*)/, '');
+    contentOnly = contentOnly.replace(/^(\*\*\d+[\.)]\s*\*\*)/, '');
+    contentOnly = contentOnly.replace(/\*\*/g, '').trim();
+
+    // Only include if there's substantial content (more than just a label)
+    return contentOnly.length > 10;
   });
 
   if (potentialOptions.length >= 2) {

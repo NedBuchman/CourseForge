@@ -35,7 +35,13 @@ Guidelines:
 - Focus on benefits and transformation
 - Write for course creators and educators
 - Avoid robotic or overly formal tone
-- Keep it concise and actionable`;
+- Keep it concise and actionable
+
+OUTPUT FORMAT:
+- Present options as a numbered list (1. 2. 3.)
+- Do NOT include character counts on separate lines
+- Each numbered item should be complete and self-contained
+- Do NOT use labels like "Option 1:" or "Title:" - just provide the content`;
 
   if (fieldName === "Key Course Benefits") {
     basePrompt += `
@@ -59,10 +65,25 @@ function generateAutoPrompt(body: RequestBody): string {
 
   if (fieldName === "Course Headline") {
     const topic = courseTopic || currentValue || "this course";
-    prompt = `Give me 5 catchy, benefit-focused course headlines for a course about ${topic}. Each should be under 100 characters and focus on the transformation or value students will get.`;
+    prompt = `Give me 5 catchy, benefit-focused course headlines for a course about ${topic}. Each should be under 100 characters and focus on the transformation or value students will get.
+
+Format your response as a numbered list:
+1. First headline
+2. Second headline
+3. Third headline
+etc.
+
+Do NOT include character counts or any extra labels.`;
   } else if (fieldName === "Value Proposition") {
     const topic = courseTopic || "this course";
-    prompt = `Write 3 compelling value propositions (2-3 sentences each) for a course about ${topic}. Focus on the transformation students will experience and why they should take this course.`;
+    prompt = `Write 3 compelling value propositions (2-3 sentences each) for a course about ${topic}. Focus on the transformation students will experience and why they should take this course.
+
+Format your response as a numbered list:
+1. First value proposition
+2. Second value proposition
+3. Third value proposition
+
+Do NOT include labels like "Value Proposition 1:" - just provide the complete text for each option.`;
   } else if (fieldName === "Who Is This Course For?") {
     const topic = courseTopic || "this course";
     prompt = `Describe 3 different ideal student personas for a course about ${topic}. Help potential students self-identify if this course is right for them.`;
