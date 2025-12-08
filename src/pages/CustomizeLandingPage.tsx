@@ -275,6 +275,33 @@ export default function CustomizeLandingPage({
     } else if (aiActiveField === 'Who Is This Course For?') {
       const trimmedContent = content.substring(0, 300);
       setAudienceDescription(trimmedContent);
+    } else if (aiActiveField === 'Key Course Benefits') {
+      const lines = content.split('\n').filter(line => line.trim());
+
+      lines.forEach((line, index) => {
+        let cleanLine = line.replace(/^(Benefit\s*\d+[:.)\s-]*|^\d+[:.)\s-]*)/i, '').trim();
+
+        const separatorMatch = cleanLine.match(/\s*[-–—:]\s*/);
+        if (separatorMatch) {
+          const separatorIndex = cleanLine.indexOf(separatorMatch[0]);
+          const title = cleanLine.substring(0, separatorIndex).trim().substring(0, 40);
+          const description = cleanLine.substring(separatorIndex + separatorMatch[0].length).trim().substring(0, 80);
+
+          if (index === 0) {
+            setBenefit1Title(title);
+            setBenefit1Description(description);
+          } else if (index === 1) {
+            setBenefit2Title(title);
+            setBenefit2Description(description);
+          } else if (index === 2) {
+            setBenefit3Title(title);
+            setBenefit3Description(description);
+          } else if (index === 3) {
+            setBenefit4Title(title);
+            setBenefit4Description(description);
+          }
+        }
+      });
     }
   };
 
@@ -874,13 +901,18 @@ export default function CustomizeLandingPage({
             : aiActiveField === 'Who Is This Course For?'
             ? "Describe your ideal student. Help visitors self-identify if this course is right for them."
             : aiActiveField === 'Key Course Benefits'
-            ? "Highlight 2-4 key benefits or learning outcomes. What will students gain?"
+            ? `Generate compelling course benefits for: ${courseTopicForAI}. Create 2-4 benefit items, each with a short catchy title (max 40 chars) and a clear description (max 80 chars). Focus on tangible outcomes, skills gained, or transformations students will experience. Format as: "Title - Description" for each benefit.`
             : ''
         }
         currentValue={
           aiActiveField === 'Course Headline' ? courseHeadline
           : aiActiveField === 'Value Proposition' ? valueProposition
           : aiActiveField === 'Who Is This Course For?' ? audienceDescription
+          : aiActiveField === 'Key Course Benefits'
+          ? `Benefit 1: ${benefit1Title}${benefit1Description ? ` - ${benefit1Description}` : ''}
+Benefit 2: ${benefit2Title}${benefit2Description ? ` - ${benefit2Description}` : ''}
+Benefit 3: ${benefit3Title}${benefit3Description ? ` - ${benefit3Description}` : ''}
+Benefit 4: ${benefit4Title}${benefit4Description ? ` - ${benefit4Description}` : ''}`.trim()
           : ''
         }
         courseTopic={courseTopicForAI}
