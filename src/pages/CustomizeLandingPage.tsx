@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Upload, Palette, Target, Sparkles, Home } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import AIFieldTrigger from '../components/AIFieldTrigger';
+import AIHelperPanel from '../components/AIHelperPanel';
 
 interface CourseContent {
   course_title: string;
@@ -50,6 +52,9 @@ export default function CustomizeLandingPage({
   const [generationProgress, setGenerationProgress] = useState(0);
   const [generationStatus, setGenerationStatus] = useState('');
   const [isLoadingConfig, setIsLoadingConfig] = useState(true);
+  const [isAIPanelOpen, setIsAIPanelOpen] = useState(false);
+  const [aiActiveField, setAiActiveField] = useState('');
+  const [courseTopicForAI, setCourseTopicForAI] = useState('');
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -233,6 +238,23 @@ export default function CustomizeLandingPage({
     { value: 'friendly' as PageStyle, icon: '😊', label: 'Friendly', desc: 'Warm, approachable, casual' }
   ];
 
+  const handleOpenAIPanel = (fieldName: string) => {
+    setAiActiveField(fieldName);
+    setIsAIPanelOpen(true);
+  };
+
+  const handleCloseAIPanel = () => {
+    setIsAIPanelOpen(false);
+    setAiActiveField('');
+  };
+
+  const handleInsertAIContent = (content: string) => {
+    if (aiActiveField === 'Course Headline') {
+      const trimmedContent = content.substring(0, 100);
+      setCourseHeadline(trimmedContent);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 flex flex-col">
       <header className="bg-gradient-to-r from-blue-800 to-blue-900 text-white py-4 shadow-lg">
@@ -343,16 +365,21 @@ export default function CustomizeLandingPage({
                 <label htmlFor="courseHeadline" className="block text-lg font-bold text-slate-900 mb-2">
                   Course Headline
                 </label>
-                <p className="text-slate-600 mb-3 text-sm">
+                <p className="text-slate-600 mb-1 text-sm">
                   A catchy, benefit-focused headline that grabs attention. What's the main promise of your course?
                 </p>
+                <AIFieldTrigger onClick={() => handleOpenAIPanel('Course Headline')} />
                 <input
                   type="text"
                   id="courseHeadline"
                   value={courseHeadline}
                   onChange={(e) => setCourseHeadline(e.target.value)}
                   maxLength={100}
-                  className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-600 focus:outline-none bg-slate-50 focus:bg-white transition-colors"
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none bg-slate-50 focus:bg-white transition-all mt-3 ${
+                    aiActiveField === 'Course Headline' && isAIPanelOpen
+                      ? 'border-blue-400 ring-4 ring-blue-100 shadow-lg'
+                      : 'border-slate-200 focus:border-blue-600'
+                  }`}
                   placeholder="e.g., Master Data Analysis in 2 Hours - No Experience Required"
                 />
                 <div className="text-right text-sm text-slate-500 mt-1">{courseHeadline.length}/100 characters</div>
@@ -795,6 +822,20 @@ export default function CustomizeLandingPage({
           </div>
         </div>
       )}
+
+      <AIHelperPanel
+        isOpen={isAIPanelOpen}
+        onClose={handleCloseAIPanel}
+        fieldName={aiActiveField}
+        fieldDescription={
+          aiActiveField === 'Course Headline'
+            ? "A catchy, benefit-focused headline that grabs attention. What's the main promise of your course?"
+            : ''
+        }
+        currentValue={aiActiveField === 'Course Headline' ? courseHeadline : ''}
+        courseTopic={courseTopicForAI}
+        onInsert={handleInsertAIContent}
+      />
     </div>
   );
 }
