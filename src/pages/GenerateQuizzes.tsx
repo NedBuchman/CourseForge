@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, Sparkles, BookOpen, Shield, CheckCircle, Clock, TrendingUp, AlertCircle, Home } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Sparkles, BookOpen, Shield, CheckCircle, Clock, TrendingUp, AlertCircle, Home, LogOut } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Lesson {
@@ -32,6 +32,7 @@ interface GenerateQuizzesProps {
   onBack: () => void;
   onComplete: () => void;
   onBackToCourses?: () => void;
+  onLogout?: () => void;
 }
 
 export default function GenerateQuizzes({
@@ -39,7 +40,8 @@ export default function GenerateQuizzes({
   courseContent,
   onBack,
   onComplete,
-  onBackToCourses
+  onBackToCourses,
+  onLogout
 }: GenerateQuizzesProps) {
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -320,6 +322,15 @@ export default function GenerateQuizzes({
               <ArrowLeft className="w-5 h-5" />
               <span>Back to Course</span>
             </button>
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                className="text-blue-100 hover:text-white transition-colors flex items-center gap-2"
+              >
+                <LogOut className="w-5 h-5" />
+                <span>Logout</span>
+              </button>
+            )}
           </div>
         </div>
       </header>

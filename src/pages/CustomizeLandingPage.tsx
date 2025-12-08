@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, Upload, Palette, Target, Sparkles, Home } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Upload, Palette, Target, Sparkles, Home, LogOut } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import AIFieldTrigger from '../components/AIFieldTrigger';
 import AIHelperPanel from '../components/AIHelperPanel';
@@ -16,6 +16,7 @@ interface CustomizeLandingPageProps {
   onBack: () => void;
   onComplete: () => void;
   onBackToCourses?: () => void;
+  onLogout?: () => void;
 }
 
 type PageStyle = 'professional' | 'modern' | 'minimal' | 'friendly';
@@ -24,7 +25,8 @@ export default function CustomizeLandingPage({
   courseId,
   onBack,
   onComplete,
-  onBackToCourses
+  onBackToCourses,
+  onLogout
 }: CustomizeLandingPageProps) {
   const [courseHeadline, setCourseHeadline] = useState('');
   const [valueProposition, setValueProposition] = useState('');
@@ -301,6 +303,15 @@ export default function CustomizeLandingPage({
               <ArrowLeft className="w-5 h-5" />
               <span>Back to Review</span>
             </button>
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                className="text-blue-100 hover:text-white transition-colors flex items-center gap-2"
+              >
+                <LogOut className="w-5 h-5" />
+                <span>Logout</span>
+              </button>
+            )}
           </div>
         </div>
       </header>

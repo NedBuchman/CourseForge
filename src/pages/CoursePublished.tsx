@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Copy, Mail, Share2, BarChart2, Edit, Plus, CheckCircle, Download, Home } from 'lucide-react';
+import { Copy, Mail, Share2, BarChart2, Edit, Plus, CheckCircle, Download, Home, LogOut } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { exportCourseProject } from '../lib/courseExporter';
 
@@ -19,6 +19,7 @@ interface CoursePublishedProps {
   courseContent: CourseContent;
   onCreateAnother: () => void;
   onBackToCourses?: () => void;
+  onLogout?: () => void;
 }
 
 interface Confetti {
@@ -33,7 +34,8 @@ export default function CoursePublished({
   courseId,
   courseContent,
   onCreateAnother,
-  onBackToCourses
+  onBackToCourses,
+  onLogout
 }: CoursePublishedProps) {
   const [confetti, setConfetti] = useState<Confetti[]>([]);
   const [copied, setCopied] = useState(false);
@@ -231,15 +233,26 @@ export default function CoursePublished({
             <img src="/CourseForgeLogo.png" alt="CourseForge" className="h-8 w-auto" />
             <span className="text-2xl font-black">COURSEFORGE</span>
           </div>
-          {onBackToCourses && (
-            <button
-              onClick={onBackToCourses}
-              className="text-blue-100 hover:text-white transition-colors flex items-center gap-2"
-            >
-              <Home className="w-5 h-5" />
-              <span>Back to Courses</span>
-            </button>
-          )}
+          <div className="flex items-center gap-4">
+            {onBackToCourses && (
+              <button
+                onClick={onBackToCourses}
+                className="text-blue-100 hover:text-white transition-colors flex items-center gap-2"
+              >
+                <Home className="w-5 h-5" />
+                <span>Back to Courses</span>
+              </button>
+            )}
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                className="text-blue-100 hover:text-white transition-colors flex items-center gap-2"
+              >
+                <LogOut className="w-5 h-5" />
+                <span>Logout</span>
+              </button>
+            )}
+          </div>
         </div>
       </header>
 

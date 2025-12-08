@@ -980,6 +980,23 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
     onBack();
   };
 
+  const handleBackToCourseList = () => {
+    setShowWorkflowDashboard(false);
+    setShowQuizGeneration(false);
+    setShowPresentationGeneration(false);
+    setShowPresentationReview(false);
+    setShowLandingPageCustomization(false);
+    setShowLandingPageReview(false);
+    setShowCoursePublished(false);
+    setShowVideoReview(false);
+    setShowResults(false);
+    setShowNewCourseForm(false);
+    setSelectedCourse(null);
+    setCurrentCourseId(null);
+    setCourseContent(null);
+    setIsViewMode(false);
+  };
+
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case 'beginner': return 'text-green-600 bg-green-100';
@@ -1386,7 +1403,8 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
         courseId={currentCourseId}
         courseContent={courseContent}
         onCreateAnother={handleCreateAnotherCourse}
-        onBackToCourses={onBack}
+        onBackToCourses={handleBackToCourseList}
+        onLogout={handleLogout}
       />
     );
   }
@@ -1398,7 +1416,8 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
         courseContent={courseContent}
         onBack={handleBackFromLandingPageReview}
         onComplete={handleLandingPageReviewComplete}
-        onBackToCourses={onBack}
+        onBackToCourses={handleBackToCourseList}
+        onLogout={handleLogout}
       />
     );
   }
@@ -1410,7 +1429,8 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
         courseContent={courseContent}
         onBack={handleBackFromLandingPageCustomization}
         onComplete={handleLandingPageCustomizationComplete}
-        onBackToCourses={onBack}
+        onBackToCourses={handleBackToCourseList}
+        onLogout={handleLogout}
       />
     );
   }
@@ -1422,7 +1442,8 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
         courseContent={courseContent}
         onBack={handleBackFromPresentationReview}
         onComplete={handlePresentationReviewComplete}
-        onBackToCourses={onBack}
+        onBackToCourses={handleBackToCourseList}
+        onLogout={handleLogout}
       />
     );
   }
@@ -1434,7 +1455,8 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
         courseContent={courseContent}
         onBack={handleBackFromPresentationGeneration}
         onComplete={handlePresentationGenerationComplete}
-        onBackToCourses={onBack}
+        onBackToCourses={handleBackToCourseList}
+        onLogout={handleLogout}
       />
     );
   }
@@ -1445,7 +1467,8 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
         courseId={currentCourseId}
         onComplete={handleVideoReviewComplete}
         onBack={handleBackFromVideoReview}
-        onBackToCourses={onBack}
+        onBackToCourses={handleBackToCourseList}
+        onLogout={handleLogout}
       />
     );
   }
@@ -1457,7 +1480,8 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
         courseContent={courseContent}
         onBack={handleBackFromQuizGeneration}
         onComplete={handleQuizGenerationComplete}
-        onBackToCourses={onBack}
+        onBackToCourses={handleBackToCourseList}
+        onLogout={handleLogout}
       />
     );
   }
@@ -1484,6 +1508,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
           setSelectedCourse(null);
         }}
         onViewAnalytics={onViewAnalytics ? () => onViewAnalytics(selectedCourse.id, selectedCourse.title) : undefined}
+        onLogout={handleLogout}
       />
     );
   }

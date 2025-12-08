@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Clock, CheckCircle, XCircle, Award, TrendingUp, Calendar } from 'lucide-react';
+import { ArrowLeft, Clock, CheckCircle, XCircle, Award, TrendingUp, Calendar, LogOut } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import StatCard from '../components/StatCard';
 import ProgressBar from '../components/ProgressBar';
@@ -10,6 +10,7 @@ interface StudentProgressDetailProps {
   studentId: string;
   courseTitle: string;
   onBack: () => void;
+  onLogout?: () => void;
 }
 
 interface StudentInfo {
@@ -52,7 +53,8 @@ export default function StudentProgressDetail({
   courseId,
   studentId,
   courseTitle,
-  onBack
+  onBack,
+  onLogout
 }: StudentProgressDetailProps) {
   const [loading, setLoading] = useState(true);
   const [studentInfo, setStudentInfo] = useState<StudentInfo | null>(null);
@@ -216,18 +218,31 @@ export default function StudentProgressDetail({
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100">
       <header className="bg-gradient-to-r from-blue-800 to-blue-900 text-white py-4 shadow-lg">
         <div className="container mx-auto px-6">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={onBack}
-              className="p-2 hover:bg-blue-700 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div>
-              <h1 className="text-2xl font-black">
-                {studentInfo.first_name} {studentInfo.last_name}
-              </h1>
-              <p className="text-blue-200 text-sm">{courseTitle}</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={onBack}
+                className="p-2 hover:bg-blue-700 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div>
+                <h1 className="text-2xl font-black">
+                  {studentInfo.first_name} {studentInfo.last_name}
+                </h1>
+                <p className="text-blue-200 text-sm">{courseTitle}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {onLogout && (
+                <button
+                  onClick={onLogout}
+                  className="text-blue-100 hover:text-white transition-colors flex items-center gap-2"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span>Logout</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

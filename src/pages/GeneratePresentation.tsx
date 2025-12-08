@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, Upload, Check, Sparkles, Palette, Image, Zap, GraduationCap, Monitor, Home } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Upload, Check, Sparkles, Palette, Image, Zap, GraduationCap, Monitor, Home, LogOut } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface CourseContent {
@@ -14,6 +14,7 @@ interface GeneratePresentationProps {
   onBack: () => void;
   onComplete: () => void;
   onBackToCourses?: () => void;
+  onLogout?: () => void;
 }
 
 type Theme = 'modern' | 'vibrant' | 'academic' | 'tech';
@@ -112,7 +113,8 @@ export default function GeneratePresentation({
   courseContent,
   onBack,
   onComplete,
-  onBackToCourses
+  onBackToCourses,
+  onLogout
 }: GeneratePresentationProps) {
   const [selectedTheme, setSelectedTheme] = useState<Theme>('modern');
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -267,6 +269,15 @@ export default function GeneratePresentation({
               <ArrowLeft className="w-5 h-5" />
               <span>Back to Quizzes</span>
             </button>
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                className="text-blue-100 hover:text-white transition-colors flex items-center gap-2"
+              >
+                <LogOut className="w-5 h-5" />
+                <span>Logout</span>
+              </button>
+            )}
           </div>
         </div>
       </header>

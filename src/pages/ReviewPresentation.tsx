@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, CheckCircle, Home } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, Home, LogOut } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Lesson {
@@ -38,6 +38,7 @@ interface ReviewPresentationProps {
   onBack: () => void;
   onComplete: () => void;
   onBackToCourses?: () => void;
+  onLogout?: () => void;
 }
 
 type TabType = 'overview' | `lesson${number}` | `quiz${number}` | 'certificate';
@@ -74,7 +75,8 @@ export default function ReviewPresentation({
   courseContent,
   onBack,
   onComplete,
-  onBackToCourses
+  onBackToCourses,
+  onLogout
 }: ReviewPresentationProps) {
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -489,6 +491,15 @@ export default function ReviewPresentation({
               <ArrowLeft className="w-5 h-5" />
               <span>Back to Design</span>
             </button>
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                className="text-blue-100 hover:text-white transition-colors flex items-center gap-2"
+              >
+                <LogOut className="w-5 h-5" />
+                <span>Logout</span>
+              </button>
+            )}
           </div>
         </div>
       </header>

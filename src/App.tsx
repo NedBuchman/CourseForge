@@ -6,6 +6,7 @@ import CreateCourse from './pages/CreateCourse';
 import StudentLogin from './pages/StudentLogin';
 import CourseAnalytics from './pages/CourseAnalytics';
 import StudentProgressDetail from './pages/StudentProgressDetail';
+import { supabase } from './lib/supabase';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('landing');
@@ -16,6 +17,11 @@ function App() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [currentPage]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setCurrentPage('login');
+  };
 
   const renderPage = () => {
     switch (currentPage) {
@@ -72,6 +78,7 @@ function App() {
               console.log('View quiz:', quizId);
             }}
             onBackToCourses={() => setCurrentPage('create-course')}
+            onLogout={handleLogout}
           />
         ) : (
           <div>No course selected</div>
@@ -83,6 +90,7 @@ function App() {
             studentId={currentStudentId}
             courseTitle={currentCourseTitle}
             onBack={() => setCurrentPage('course-analytics')}
+            onLogout={handleLogout}
           />
         ) : (
           <div>No student selected</div>

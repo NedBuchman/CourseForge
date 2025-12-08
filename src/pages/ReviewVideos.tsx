@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Video, CheckCircle, XCircle, RefreshCw, Clock, Eye, Download, Loader, ArrowLeft, Home } from 'lucide-react';
+import { Video, CheckCircle, XCircle, RefreshCw, Clock, Eye, Download, Loader, ArrowLeft, Home, LogOut } from 'lucide-react';
 import Toast from '../components/Toast';
 
 interface VideoAsset {
@@ -23,9 +23,10 @@ interface ReviewVideosProps {
   onComplete: () => void;
   onBack: () => void;
   onBackToCourses?: () => void;
+  onLogout?: () => void;
 }
 
-const ReviewVideos: React.FC<ReviewVideosProps> = ({ courseId, onComplete, onBack, onBackToCourses }) => {
+const ReviewVideos: React.FC<ReviewVideosProps> = ({ courseId, onComplete, onBack, onBackToCourses, onLogout }) => {
   const [videos, setVideos] = useState<VideoAsset[]>([]);
   const [selectedVideo, setSelectedVideo] = useState<VideoAsset | null>(null);
   const [loading, setLoading] = useState(true);
@@ -249,6 +250,15 @@ const ReviewVideos: React.FC<ReviewVideosProps> = ({ courseId, onComplete, onBac
                   Back to Courses
                 </button>
               </>
+            )}
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                className="text-blue-100 hover:text-white transition-colors flex items-center gap-2"
+              >
+                <LogOut className="w-5 h-5" />
+                <span>Logout</span>
+              </button>
             )}
           </div>
 

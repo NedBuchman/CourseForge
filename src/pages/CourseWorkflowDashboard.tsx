@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle, Lock, AlertTriangle, ArrowRight, Edit, FileText, Brain, Presentation, Globe, Rocket, Download, BarChart3, Video } from 'lucide-react';
+import { CheckCircle, Lock, AlertTriangle, ArrowRight, Edit, FileText, Brain, Presentation, Globe, Rocket, Download, BarChart3, Video, LogOut } from 'lucide-react';
 import ConfirmationModal from '../components/ConfirmationModal';
 
 interface CourseWorkflowDashboardProps {
@@ -19,6 +19,7 @@ interface CourseWorkflowDashboardProps {
   onEditStep: (step: number) => void;
   onBack: () => void;
   onViewAnalytics?: () => void;
+  onLogout?: () => void;
 }
 
 interface WorkflowStep {
@@ -46,7 +47,8 @@ export default function CourseWorkflowDashboard({
   onContinue,
   onEditStep,
   onBack,
-  onViewAnalytics
+  onViewAnalytics,
+  onLogout
 }: CourseWorkflowDashboardProps) {
   const [showEditWarning, setShowEditWarning] = useState(false);
   const [selectedStepToEdit, setSelectedStepToEdit] = useState<WorkflowStep | null>(null);
@@ -219,9 +221,20 @@ export default function CourseWorkflowDashboard({
             <img src="/CourseForgeLogo.png" alt="CourseForge" className="h-8 w-auto" />
             <span className="text-2xl font-black tracking-tight">COURSEFORGE</span>
           </div>
-          <button onClick={onBack} className="text-white hover:text-blue-200 transition-colors">
-            ← Back to Courses
-          </button>
+          <div className="flex items-center gap-4">
+            <button onClick={onBack} className="text-white hover:text-blue-200 transition-colors">
+              ← Back to Courses
+            </button>
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                className="text-blue-100 hover:text-white transition-colors flex items-center gap-2"
+              >
+                <LogOut className="w-5 h-5" />
+                <span>Logout</span>
+              </button>
+            )}
+          </div>
         </div>
       </header>
 

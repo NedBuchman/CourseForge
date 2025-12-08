@@ -10,7 +10,8 @@ import {
   AlertCircle,
   RefreshCw,
   ChevronRight,
-  Home
+  Home,
+  LogOut
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import StatCard from '../components/StatCard';
@@ -27,6 +28,7 @@ interface CourseAnalyticsProps {
   onViewLesson: (lessonIndex: number) => void;
   onViewQuiz: (quizId: string) => void;
   onBackToCourses?: () => void;
+  onLogout?: () => void;
 }
 
 interface CourseOverview {
@@ -92,7 +94,8 @@ export default function CourseAnalytics({
   onViewStudent,
   onViewLesson,
   onViewQuiz,
-  onBackToCourses
+  onBackToCourses,
+  onLogout
 }: CourseAnalyticsProps) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -262,6 +265,15 @@ export default function CourseAnalytics({
                 <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
                 <span>Refresh</span>
               </button>
+              {onLogout && (
+                <button
+                  onClick={onLogout}
+                  className="text-blue-100 hover:text-white transition-colors flex items-center gap-2"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span>Logout</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
