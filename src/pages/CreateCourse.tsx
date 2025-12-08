@@ -11,6 +11,7 @@ import CustomizeLandingPage from './CustomizeLandingPage';
 import ReviewLandingPage from './ReviewLandingPage';
 import CoursePublished from './CoursePublished';
 import CourseWorkflowDashboard from './CourseWorkflowDashboard';
+import ReviewVideos from './ReviewVideos';
 
 interface CreateCourseProps {
   onComplete: (courseId: string) => void;
@@ -33,11 +34,13 @@ interface Course {
   current_step: number;
   last_completed_step: number;
   content_status: string;
+  videos_status: string;
   quizzes_status: string;
   presentation_status: string;
   landing_page_status: string;
   published_status: string;
   downloaded_status: string;
+  content_format: string;
 }
 
 interface Lesson {
@@ -76,6 +79,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
   const [isViewMode, setIsViewMode] = useState(false);
   const [statusBanner, setStatusBanner] = useState<{ type: 'info' | 'error'; message: string } | null>(null);
   const [showQuizGeneration, setShowQuizGeneration] = useState(false);
+  const [showVideoReview, setShowVideoReview] = useState(false);
   const [showPresentationGeneration, setShowPresentationGeneration] = useState(false);
   const [showPresentationReview, setShowPresentationReview] = useState(false);
   const [showLandingPageCustomization, setShowLandingPageCustomization] = useState(false);
@@ -119,7 +123,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
 
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [showResults, showQuizGeneration, showPresentationGeneration, showPresentationReview, showLandingPageCustomization, showLandingPageReview, showCoursePublished, showNewCourseForm]);
+  }, [showResults, showVideoReview, showQuizGeneration, showPresentationGeneration, showPresentationReview, showLandingPageCustomization, showLandingPageReview, showCoursePublished, showNewCourseForm]);
 
   const checkConfiguration = async () => {
     try {
@@ -178,7 +182,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
 
       const { data, error } = await supabase
         .from('courses')
-        .select('id, title, status, difficulty_level, created_at, updated_at, current_step, last_completed_step, content_status, quizzes_status, presentation_status, landing_page_status, published_status, downloaded_status')
+        .select('id, title, status, difficulty_level, created_at, updated_at, current_step, last_completed_step, content_status, videos_status, quizzes_status, presentation_status, landing_page_status, published_status, downloaded_status, content_format')
         .eq('user_id', user.id)
         .order('updated_at', { ascending: false });
 
@@ -282,6 +286,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
     setShowWorkflowDashboard(false);
 
     const currentStep = selectedCourse.current_step;
+    const hasVideoFormat = selectedCourse.content_format === 'video' || selectedCourse.content_format === 'hybrid';
 
     if (currentStep === 0 || currentStep === 1) {
       if (courseContent && courseContent.lessons) {
@@ -297,15 +302,17 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
             : 'Complete the form below to generate your course content.'
         });
       }
-    } else if (currentStep === 2) {
+    } else if (hasVideoFormat && currentStep === 2) {
+      setShowVideoReview(true);
+    } else if ((hasVideoFormat && currentStep === 3) || (!hasVideoFormat && currentStep === 2)) {
       setShowQuizGeneration(true);
-    } else if (currentStep === 3) {
+    } else if ((hasVideoFormat && currentStep === 4) || (!hasVideoFormat && currentStep === 3)) {
       setShowPresentationGeneration(true);
-    } else if (currentStep === 4) {
+    } else if ((hasVideoFormat && currentStep === 5) || (!hasVideoFormat && currentStep === 4)) {
       setShowLandingPageCustomization(true);
-    } else if (currentStep === 5) {
+    } else if ((hasVideoFormat && currentStep === 6) || (!hasVideoFormat && currentStep === 5)) {
       setShowLandingPageReview(true);
-    } else if (currentStep === 6) {
+    } else if ((hasVideoFormat && currentStep === 7) || (!hasVideoFormat && currentStep === 6)) {
       setShowCoursePublished(true);
     }
   };
@@ -315,18 +322,22 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
 
     setShowWorkflowDashboard(false);
 
+    const hasVideoFormat = selectedCourse.content_format === 'video' || selectedCourse.content_format === 'hybrid';
+
     if (step === 1) {
       setShowResults(true);
       setIsViewMode(true);
-    } else if (step === 2) {
+    } else if (hasVideoFormat && step === 2) {
+      setShowVideoReview(true);
+    } else if ((hasVideoFormat && step === 3) || (!hasVideoFormat && step === 2)) {
       setShowQuizGeneration(true);
-    } else if (step === 3) {
+    } else if ((hasVideoFormat && step === 4) || (!hasVideoFormat && step === 3)) {
       setShowPresentationGeneration(true);
-    } else if (step === 4) {
+    } else if ((hasVideoFormat && step === 5) || (!hasVideoFormat && step === 4)) {
       setShowLandingPageCustomization(true);
-    } else if (step === 5) {
+    } else if ((hasVideoFormat && step === 6) || (!hasVideoFormat && step === 5)) {
       setShowLandingPageReview(true);
-    } else if (step === 6) {
+    } else if ((hasVideoFormat && step === 7) || (!hasVideoFormat && step === 6)) {
       setShowCoursePublished(true);
     }
   };
@@ -334,6 +345,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
   const handleBackToDashboard = () => {
     setShowNewCourseForm(false);
     setShowResults(false);
+    setShowVideoReview(false);
     setShowQuizGeneration(false);
     setShowPresentationGeneration(false);
     setShowPresentationReview(false);
@@ -1115,11 +1127,46 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
       }
     }
 
+    const hasVideoFormat = selectedCourse?.content_format === 'video' || selectedCourse?.content_format === 'hybrid';
+    if (hasVideoFormat) {
+      setShowVideoReview(true);
+    } else {
+      setShowQuizGeneration(true);
+    }
+  };
+
+  const handleBackFromVideoReview = () => {
+    setShowVideoReview(false);
+    setShowResults(true);
+  };
+
+  const handleVideoReviewComplete = async () => {
+    if (currentCourseId) {
+      const hasVideoFormat = selectedCourse?.content_format === 'video' || selectedCourse?.content_format === 'hybrid';
+      await supabase
+        .from('courses')
+        .update({
+          videos_status: 'approved',
+          current_step: hasVideoFormat ? 3 : 2,
+          last_completed_step: hasVideoFormat ? 2 : 1,
+        })
+        .eq('id', currentCourseId);
+
+      await fetchUserCourses();
+    }
+
+    setShowVideoReview(false);
     setShowQuizGeneration(true);
   };
 
   const handleBackFromQuizGeneration = () => {
+    const hasVideoFormat = selectedCourse?.content_format === 'video' || selectedCourse?.content_format === 'hybrid';
     setShowQuizGeneration(false);
+    if (hasVideoFormat) {
+      setShowVideoReview(true);
+    } else {
+      setShowResults(true);
+    }
   };
 
   const handleQuizGenerationComplete = () => {
@@ -1392,6 +1439,17 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
     );
   }
 
+  if (showVideoReview && currentCourseId) {
+    return (
+      <ReviewVideos
+        courseId={currentCourseId}
+        onComplete={handleVideoReviewComplete}
+        onBack={handleBackFromVideoReview}
+        onBackToCourses={onBack}
+      />
+    );
+  }
+
   if (showQuizGeneration && courseContent && currentCourseId) {
     return (
       <GenerateQuizzes
@@ -1412,11 +1470,13 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
         currentStep={selectedCourse.current_step}
         lastCompletedStep={selectedCourse.last_completed_step}
         contentStatus={selectedCourse.content_status}
+        videosStatus={selectedCourse.videos_status || 'not_started'}
         quizzesStatus={selectedCourse.quizzes_status}
         presentationStatus={selectedCourse.presentation_status}
         landingPageStatus={selectedCourse.landing_page_status}
         publishedStatus={selectedCourse.published_status}
         downloadedStatus={selectedCourse.downloaded_status}
+        contentFormat={selectedCourse.content_format || 'text'}
         onContinue={handleDashboardContinue}
         onEditStep={handleDashboardEditStep}
         onBack={() => {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle, Lock, AlertTriangle, ArrowRight, Edit, FileText, Brain, Presentation, Globe, Rocket, Download, BarChart3 } from 'lucide-react';
+import { CheckCircle, Lock, AlertTriangle, ArrowRight, Edit, FileText, Brain, Presentation, Globe, Rocket, Download, BarChart3, Video } from 'lucide-react';
 import ConfirmationModal from '../components/ConfirmationModal';
 
 interface CourseWorkflowDashboardProps {
@@ -8,11 +8,13 @@ interface CourseWorkflowDashboardProps {
   currentStep: number;
   lastCompletedStep: number;
   contentStatus: string;
+  videosStatus: string;
   quizzesStatus: string;
   presentationStatus: string;
   landingPageStatus: string;
   publishedStatus: string;
   downloadedStatus: string;
+  contentFormat: string;
   onContinue: () => void;
   onEditStep: (step: number) => void;
   onBack: () => void;
@@ -34,11 +36,13 @@ export default function CourseWorkflowDashboard({
   currentStep,
   lastCompletedStep,
   contentStatus,
+  videosStatus,
   quizzesStatus,
   presentationStatus,
   landingPageStatus,
   publishedStatus,
   downloadedStatus,
+  contentFormat,
   onContinue,
   onEditStep,
   onBack,
@@ -48,6 +52,8 @@ export default function CourseWorkflowDashboard({
   const [selectedStepToEdit, setSelectedStepToEdit] = useState<WorkflowStep | null>(null);
   const [affectedSteps, setAffectedSteps] = useState<WorkflowStep[]>([]);
 
+  const hasVideoFormat = contentFormat === 'video' || contentFormat === 'hybrid';
+
   const getStepStatus = (stepNumber: number, statusValue: string): 'completed' | 'current' | 'needs_redo' | 'locked' => {
     if (stepNumber > lastCompletedStep + 1) return 'locked';
     if (statusValue === 'needs_redo' || statusValue === 'needs_republish') return 'needs_redo';
@@ -56,7 +62,7 @@ export default function CourseWorkflowDashboard({
     return 'locked';
   };
 
-  const steps: WorkflowStep[] = [
+  const baseSteps: WorkflowStep[] = [
     {
       number: 1,
       title: 'Content Generation',
@@ -64,48 +70,64 @@ export default function CourseWorkflowDashboard({
       icon: Brain,
       status: getStepStatus(1, contentStatus),
       canEdit: lastCompletedStep >= 1
-    },
-    {
+    }
+  ];
+
+  if (hasVideoFormat) {
+    baseSteps.push({
       number: 2,
+      title: 'Review Videos',
+      description: 'Preview and approve generated lesson videos',
+      icon: Video,
+      status: getStepStatus(2, videosStatus),
+      canEdit: lastCompletedStep >= 2
+    });
+  }
+
+  const remainingSteps: WorkflowStep[] = [
+    {
+      number: hasVideoFormat ? 3 : 2,
       title: 'Quiz Generation',
       description: 'Create assessments for each lesson',
       icon: FileText,
-      status: getStepStatus(2, quizzesStatus),
-      canEdit: lastCompletedStep >= 2
+      status: getStepStatus(hasVideoFormat ? 3 : 2, quizzesStatus),
+      canEdit: lastCompletedStep >= (hasVideoFormat ? 3 : 2)
     },
     {
-      number: 3,
+      number: hasVideoFormat ? 4 : 3,
       title: 'Presentation Setup',
       description: 'Configure presentation theme and settings',
       icon: Presentation,
-      status: getStepStatus(3, presentationStatus),
-      canEdit: lastCompletedStep >= 3
+      status: getStepStatus(hasVideoFormat ? 4 : 3, presentationStatus),
+      canEdit: lastCompletedStep >= (hasVideoFormat ? 4 : 3)
     },
     {
-      number: 4,
+      number: hasVideoFormat ? 5 : 4,
       title: 'Landing Page',
       description: 'Customize your course marketing page',
       icon: Globe,
-      status: getStepStatus(4, landingPageStatus),
-      canEdit: lastCompletedStep >= 4
+      status: getStepStatus(hasVideoFormat ? 5 : 4, landingPageStatus),
+      canEdit: lastCompletedStep >= (hasVideoFormat ? 5 : 4)
     },
     {
-      number: 5,
+      number: hasVideoFormat ? 6 : 5,
       title: 'Publish Course',
       description: 'Make your course live for students',
       icon: Rocket,
-      status: getStepStatus(5, publishedStatus),
-      canEdit: lastCompletedStep >= 5
+      status: getStepStatus(hasVideoFormat ? 6 : 5, publishedStatus),
+      canEdit: lastCompletedStep >= (hasVideoFormat ? 6 : 5)
     },
     {
-      number: 6,
+      number: hasVideoFormat ? 7 : 6,
       title: 'Download Package',
       description: 'Export your complete course',
       icon: Download,
-      status: getStepStatus(6, downloadedStatus),
-      canEdit: lastCompletedStep >= 6
+      status: getStepStatus(hasVideoFormat ? 7 : 6, downloadedStatus),
+      canEdit: lastCompletedStep >= (hasVideoFormat ? 7 : 6)
     }
   ];
+
+  const steps: WorkflowStep[] = [...baseSteps, ...remainingSteps];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -171,13 +193,15 @@ export default function CourseWorkflowDashboard({
   };
 
   const getProgressPercentage = () => {
-    return Math.round((lastCompletedStep / 6) * 100);
+    const totalSteps = hasVideoFormat ? 7 : 6;
+    return Math.round((lastCompletedStep / totalSteps) * 100);
   };
 
   const getCurrentStatusMessage = () => {
+    const totalSteps = hasVideoFormat ? 7 : 6;
     if (lastCompletedStep === 0) {
       return 'Ready to start - Begin with content generation';
-    } else if (lastCompletedStep === 6) {
+    } else if (lastCompletedStep === totalSteps) {
       return 'All steps complete - Course is fully published!';
     } else if (steps.some(s => s.status === 'needs_redo')) {
       const needsRedo = steps.filter(s => s.status === 'needs_redo');
