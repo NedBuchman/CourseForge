@@ -234,7 +234,7 @@ Deno.serve(async (req: Request) => {
     console.log("Calling Claude API...");
     await updateProgress(supabase, courseId, 15, `Generating ${lessonCount} lessons with AI...`, 0, []);
 
-    const timeoutDuration = 180000;
+    const timeoutDuration = 540000; // 9 minutes per attempt
     const maxRetries = 2;
     let claudeResponse;
     let lastError;
@@ -376,7 +376,7 @@ Deno.serve(async (req: Request) => {
 
       try {
         const retryController = new AbortController();
-        const retryTimeoutId = setTimeout(() => retryController.abort(), 180000);
+        const retryTimeoutId = setTimeout(() => retryController.abort(), 540000); // 9 minutes
 
         const retryResponse = await fetch("https://api.anthropic.com/v1/messages", {
           method: "POST",
