@@ -1484,6 +1484,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
   };
 
   if (showCoursePublished && courseContent && currentCourseId) {
+    const courseTitle = courseContent.course_title;
     return (
       <CoursePublished
         courseId={currentCourseId}
@@ -1491,6 +1492,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
         onCreateAnother={handleCreateAnotherCourse}
         onBackToCourses={handleBackToCourseList}
         onLogout={handleLogout}
+        onViewAnalytics={onViewAnalytics ? () => onViewAnalytics(currentCourseId, courseTitle) : undefined}
       />
     );
   }

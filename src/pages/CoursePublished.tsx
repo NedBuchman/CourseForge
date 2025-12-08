@@ -20,6 +20,7 @@ interface CoursePublishedProps {
   onCreateAnother: () => void;
   onBackToCourses?: () => void;
   onLogout?: () => void;
+  onViewAnalytics?: () => void;
 }
 
 interface Confetti {
@@ -35,7 +36,8 @@ export default function CoursePublished({
   courseContent,
   onCreateAnother,
   onBackToCourses,
-  onLogout
+  onLogout,
+  onViewAnalytics
 }: CoursePublishedProps) {
   const [confetti, setConfetti] = useState<Confetti[]>([]);
   const [copied, setCopied] = useState(false);
@@ -497,13 +499,23 @@ export default function CoursePublished({
                 <p className="text-slate-600 mb-4 leading-relaxed">
                   Track student progress, completion rates, and quiz scores in your dashboard.
                 </p>
-                <button
-                  onClick={() => alert('Dashboard coming soon!')}
-                  className="px-5 py-2 bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg font-bold hover:shadow-lg transition-all inline-flex items-center gap-2"
-                >
-                  <BarChart2 className="w-4 h-4" />
-                  View Dashboard →
-                </button>
+                {onViewAnalytics ? (
+                  <button
+                    onClick={onViewAnalytics}
+                    className="px-5 py-2 bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg font-bold hover:shadow-lg transition-all inline-flex items-center gap-2"
+                  >
+                    <BarChart2 className="w-4 h-4" />
+                    View Dashboard →
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => alert('Dashboard coming soon!')}
+                    className="px-5 py-2 bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg font-bold hover:shadow-lg transition-all inline-flex items-center gap-2"
+                  >
+                    <BarChart2 className="w-4 h-4" />
+                    View Dashboard →
+                  </button>
+                )}
               </div>
 
               <div className="bg-gradient-to-br from-blue-50 to-cyan-50 p-6 rounded-xl border-2 border-blue-200 hover:shadow-lg transition-all">
@@ -552,12 +564,21 @@ export default function CoursePublished({
               Your course is live and students can start learning immediately. Share it with the world!
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button
-                onClick={() => alert('Dashboard coming soon!')}
-                className="px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl text-lg font-bold hover:shadow-2xl transition-all"
-              >
-                Go to Course Dashboard →
-              </button>
+              {onViewAnalytics ? (
+                <button
+                  onClick={onViewAnalytics}
+                  className="px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl text-lg font-bold hover:shadow-2xl transition-all"
+                >
+                  Go to Course Dashboard →
+                </button>
+              ) : (
+                <button
+                  onClick={() => alert('Dashboard coming soon!')}
+                  className="px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl text-lg font-bold hover:shadow-2xl transition-all"
+                >
+                  Go to Course Dashboard →
+                </button>
+              )}
               <button
                 onClick={onCreateAnother}
                 className="px-8 py-4 bg-white bg-opacity-20 text-white rounded-xl text-lg font-bold border-2 border-white border-opacity-30 hover:bg-white hover:text-blue-900 transition-all"
