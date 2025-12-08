@@ -699,6 +699,13 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
       const edgeFunctionTimeoutId = setTimeout(() => edgeFunctionController.abort(), 30000);
 
       try {
+        console.log('Making request to:', edgeFunctionUrl);
+        console.log('Request headers:', {
+          'Authorization': `Bearer ${session.access_token.substring(0, 20)}...`,
+          'apikey': `${supabaseAnonKey.substring(0, 20)}...`,
+          'Content-Type': 'application/json',
+        });
+
         const edgeFunctionResponse = await fetch(edgeFunctionUrl, {
           method: 'POST',
           headers: {
@@ -740,9 +747,34 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
       } catch (err: any) {
         clearTimeout(edgeFunctionTimeoutId);
 
+        console.error('Fetch error details:', {
+          name: err.name,
+          message: err.message,
+          stack: err.stack,
+          type: err.constructor.name
+        });
+
         if (err.name === 'AbortError') {
           console.error('Edge function call timed out after 30 seconds');
           throw new Error('Failed to start course generation: The request timed out. Please check your internet connection and try again.');
+        }
+
+        if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
+          console.error('Network error - Failed to fetch');
+          console.error('Current origin:', window.location.origin);
+          console.error('Target URL:', edgeFunctionUrl);
+
+          throw new Error(
+            'Network Error: Unable to connect to the course generation service.\n\n' +
+            'This usually means:\n' +
+            '1. Your internet connection is down or unstable\n' +
+            '2. A browser extension is blocking the request (try disabling ad blockers)\n' +
+            '3. Your network firewall is blocking the connection\n' +
+            '4. CORS configuration issue\n\n' +
+            `Current origin: ${window.location.origin}\n` +
+            `Target: ${supabaseUrl}\n\n` +
+            'Please check the browser console (F12) for detailed error information.'
+          );
         }
 
         console.error('Edge function call failed:', err);
