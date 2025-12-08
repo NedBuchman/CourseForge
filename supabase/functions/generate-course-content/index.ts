@@ -23,6 +23,7 @@ interface CourseRequest {
   uploadedFileContents?: string[];
   restrictToFilesOnly?: boolean;
   chatHistory?: ChatMessage[];
+  contentFormat?: string;
 }
 
 async function updateProgress(
@@ -75,11 +76,22 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const requestData: CourseRequest = await req.json();
-    const { courseId: reqCourseId, subject, audience, difficulty, duration, objectives, context, uploadedFileContents, restrictToFilesOnly, chatHistory } = requestData;
+    const { courseId: reqCourseId, subject, audience, difficulty, duration, objectives, context, uploadedFileContents, restrictToFilesOnly, chatHistory, contentFormat } = requestData;
 
     courseId = reqCourseId;
 
-    console.log("Processing course generation request:", { courseId, subject, audience, difficulty, duration });
+    const isVideoFormat = contentFormat === 'video';
+    const targetWordCount = isVideoFormat ? 350 : 600;
+
+    console.log("Processing course generation request:", {
+      courseId,
+      subject,
+      audience,
+      difficulty,
+      duration,
+      contentFormat,
+      targetWordCount
+    });
 
     await updateProgress(supabase, courseId, 5, 'Starting course generation...', undefined, []);
 
@@ -125,7 +137,11 @@ Deno.serve(async (req: Request) => {
       prompt += `\nIMPORTANT: Incorporate the insights, requests, and refinements from the chat above into the course content.`;
     }
 
-    prompt += `\n\nCONTENT REQUIREMENTS:\n1. Create exactly ${lessonCount} progressive lessons with accurate, current information\n2. Each lesson must have: clear title, focused content (~600 words), 3-5 learning objectives\n3. Use practical examples, basic HTML tags for formatting (<strong>, <em>, <p>), audience-appropriate language\n4. Content should be comprehensive and educational\n\nJSON STRUCTURE TO RETURN (start with { immediately):\n{\n  \"course_title\": \"${subject}\",\n  \"total_lessons\": ${lessonCount},\n  \"estimated_duration\": \"${duration}\",\n  \"lessons\": [\n    {\n      \"lesson_number\": 1,\n      \"title\": \"Lesson title here\",\n      \"content\": \"Comprehensive lesson content with <strong>formatted</strong> text and examples\",\n      \"duration\": \"${lessonDuration}\",\n      \"objectives\": [\"Objective 1\", \"Objective 2\", \"Objective 3\"]\n    }\n  ]\n}\n\nFINAL REMINDER: Your response must be PURE JSON starting with { and ending with }. Nothing else!`;
+    const contentGuidance = isVideoFormat
+      ? `Each lesson must have: clear title, concise content (~${targetWordCount} words - optimized for 2.5 minute video narration), 3-4 learning objectives`
+      : `Each lesson must have: clear title, focused content (~${targetWordCount} words), 3-5 learning objectives`;
+
+    prompt += `\n\nCONTENT REQUIREMENTS:\n1. Create exactly ${lessonCount} progressive lessons with accurate, current information\n2. ${contentGuidance}\n3. Use practical examples, basic HTML tags for formatting (<strong>, <em>, <p>), audience-appropriate language\n4. Content should be comprehensive and educational${isVideoFormat ? '\n5. CRITICAL FOR VIDEO: Keep content concise and conversational for AI narration. Avoid overly complex sentences.' : ''}\n\nJSON STRUCTURE TO RETURN (start with { immediately):\n{\n  \"course_title\": \"${subject}\",\n  \"total_lessons\": ${lessonCount},\n  \"estimated_duration\": \"${duration}\",\n  \"lessons\": [\n    {\n      \"lesson_number\": 1,\n      \"title\": \"Lesson title here\",\n      \"content\": \"Comprehensive lesson content with <strong>formatted</strong> text and examples\",\n      \"duration\": \"${lessonDuration}\",\n      \"objectives\": [\"Objective 1\", \"Objective 2\", \"Objective 3\"]\n    }\n  ]\n}\n\nFINAL REMINDER: Your response must be PURE JSON starting with { and ending with }. Nothing else!`;
 
     console.log("Calling Claude API...");
     await updateProgress(supabase, courseId, 15, `Generating ${lessonCount} lessons with AI...`, 0, []);

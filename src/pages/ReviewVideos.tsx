@@ -263,6 +263,21 @@ const ReviewVideos: React.FC<ReviewVideosProps> = ({ courseId, onComplete, onBac
           </div>
         </div>
 
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-6">
+          <div className="flex items-start gap-3">
+            <Clock className="w-5 h-5 text-blue-700 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-blue-900 mb-1">Video Duration Optimization</h3>
+              <p className="text-sm text-blue-800">
+                Each lesson video is automatically optimized to stay within 2.5 minutes (HeyGen has a 3-minute maximum).
+                Videos marked as <span className="font-medium text-amber-600">"Getting long"</span> (2.5-2.75 min) or{' '}
+                <span className="font-medium text-red-600">"Near limit"</span> (2.75+ min) may be close to the maximum duration.
+                All videos are carefully condensed while maintaining educational value.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {hasIncompleteVideoConfig() && (
           <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 mb-6">
             <div className="flex items-start gap-3">
@@ -336,9 +351,26 @@ const ReviewVideos: React.FC<ReviewVideosProps> = ({ courseId, onComplete, onBac
                     </div>
 
                     {video.duration_seconds > 0 && (
-                      <p className="text-sm text-slate-600 mb-2">
-                        Duration: {formatDuration(video.duration_seconds)}
-                      </p>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Clock className="w-4 h-4 text-slate-500" />
+                        <p className={`text-sm font-medium ${
+                          video.duration_seconds > 165 ? 'text-red-600' :
+                          video.duration_seconds > 150 ? 'text-amber-600' :
+                          'text-slate-600'
+                        }`}>
+                          Duration: {formatDuration(video.duration_seconds)}
+                          {video.duration_seconds > 165 && (
+                            <span className="ml-2 text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
+                              Near limit
+                            </span>
+                          )}
+                          {video.duration_seconds > 150 && video.duration_seconds <= 165 && (
+                            <span className="ml-2 text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                              Getting long
+                            </span>
+                          )}
+                        </p>
+                      </div>
                     )}
 
                     <p className="text-sm text-slate-600 line-clamp-2 mb-3">

@@ -54,6 +54,14 @@ function validateVideoConfig(config: any): { valid: boolean; errors: string[] } 
   return { valid: errors.length === 0, errors };
 }
 
+function countWords(text: string): number {
+  return text.split(/\s+/).filter(word => word.length > 0).length;
+}
+
+function estimateDuration(wordCount: number, wordsPerMinute: number = 140): number {
+  return Math.ceil((wordCount / wordsPerMinute) * 60);
+}
+
 async function stripHtml(html: string): Promise<string> {
   return html
     .replace(/<[^>]*>/g, ' ')
@@ -66,29 +74,90 @@ async function stripHtml(html: string): Promise<string> {
     .trim();
 }
 
-async function generateVideoScript(lesson: Lesson): Promise<string> {
+async function generateVideoScript(lesson: Lesson): Promise<{ script: string; wordCount: number; estimatedSeconds: number }> {
+  const MAX_SAFE_WORDS = 350;
+  const TARGET_DURATION_SECONDS = 150;
+  const WORDS_PER_MINUTE = 140;
+
   const plainContent = await stripHtml(lesson.content);
-  
-  let script = `Welcome to ${lesson.title}.\n\n`;
-  
+
+  const intro = `Welcome to ${lesson.title}.`;
+  const introWords = countWords(intro);
+
+  let objectivesSection = '';
+  let objectivesWords = 0;
   if (lesson.objectives && lesson.objectives.length > 0) {
-    script += `In this lesson, you'll learn:\n`;
-    lesson.objectives.forEach((obj, idx) => {
-      script += `${idx + 1}. ${obj}\n`;
-    });
-    script += `\n`;
+    const maxObjectives = Math.min(lesson.objectives.length, 4);
+    objectivesSection = `In this lesson, you'll learn:\n`;
+    for (let i = 0; i < maxObjectives; i++) {
+      objectivesSection += `${i + 1}. ${lesson.objectives[i]}\n`;
+    }
+    objectivesWords = countWords(objectivesSection);
   }
-  
-  const words = plainContent.split(' ');
-  if (words.length > 400) {
-    script += words.slice(0, 400).join(' ') + '... ';
-  } else {
-    script += plainContent;
+
+  const outro = `That concludes this lesson. Let's test your understanding with a quick quiz.`;
+  const outroWords = countWords(outro);
+
+  const fixedWords = introWords + objectivesWords + outroWords;
+  const availableWordsForContent = MAX_SAFE_WORDS - fixedWords;
+
+  console.log(`Video script calculation for lesson ${lesson.lesson_number}:`, {
+    introWords,
+    objectivesWords,
+    outroWords,
+    fixedWords,
+    availableWordsForContent,
+    originalContentWords: countWords(plainContent)
+  });
+
+  const contentWords = plainContent.split(/\s+/).filter(w => w.length > 0);
+  let finalContent = plainContent;
+
+  if (contentWords.length > availableWordsForContent) {
+    const sentences = plainContent.split(/\.(?=\s|$)/).filter(s => s.trim().length > 0);
+    let truncatedContent = '';
+    let currentWordCount = 0;
+
+    for (const sentence of sentences) {
+      const sentenceWords = countWords(sentence);
+      if (currentWordCount + sentenceWords <= availableWordsForContent) {
+        truncatedContent += sentence + '. ';
+        currentWordCount += sentenceWords;
+      } else {
+        break;
+      }
+    }
+
+    finalContent = truncatedContent.trim();
+    console.log(`Content truncated from ${contentWords.length} to ${currentWordCount} words`);
   }
-  
-  script += `\n\nThat concludes this lesson. Let's test your understanding with a quick quiz.`;
-  
-  return script;
+
+  let script = intro + '\n\n';
+  if (objectivesSection) {
+    script += objectivesSection + '\n';
+  }
+  script += finalContent + '\n\n';
+  script += outro;
+
+  const totalWords = countWords(script);
+  const estimatedSeconds = estimateDuration(totalWords, WORDS_PER_MINUTE);
+
+  console.log(`Final script stats for lesson ${lesson.lesson_number}:`, {
+    totalWords,
+    estimatedSeconds,
+    estimatedMinutes: (estimatedSeconds / 60).toFixed(2),
+    withinLimit: estimatedSeconds <= TARGET_DURATION_SECONDS
+  });
+
+  if (totalWords > MAX_SAFE_WORDS) {
+    console.warn(`WARNING: Script exceeds safe word limit! ${totalWords} > ${MAX_SAFE_WORDS}`);
+  }
+
+  return {
+    script,
+    wordCount: totalWords,
+    estimatedSeconds
+  };
 }
 
 async function callHeyGenAPI(
@@ -268,8 +337,8 @@ Deno.serve(async (req: Request) => {
 
     const videoAssets: any[] = [];
     for (const lesson of lessons) {
-      const script = await generateVideoScript(lesson);
-      
+      const scriptData = await generateVideoScript(lesson);
+
       const { data: existingAsset } = await supabase
         .from('video_assets')
         .select('id')
@@ -296,9 +365,14 @@ Deno.serve(async (req: Request) => {
           course_id: courseId,
           asset_type: 'lesson',
           asset_reference_id: lesson.lesson_number.toString(),
-          script_text: script,
+          script_text: scriptData.script,
           video_config: course.video_config,
-          generation_status: 'queued'
+          generation_status: 'queued',
+          metadata: {
+            wordCount: scriptData.wordCount,
+            estimatedSeconds: scriptData.estimatedSeconds,
+            estimatedMinutes: (scriptData.estimatedSeconds / 60).toFixed(2)
+          }
         })
         .select()
         .single();
@@ -345,7 +419,7 @@ Deno.serve(async (req: Request) => {
           })
           .eq('id', asset.id);
 
-        console.log('Calling HeyGen API...');
+        console.log('Calling HeyGen API with validated script...');
         const heygenResult = await callHeyGenAPI(
           asset.script_text,
           asset.video_config,

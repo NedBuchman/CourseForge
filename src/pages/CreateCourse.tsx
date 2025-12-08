@@ -693,6 +693,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
           uploadedFileContents: uploadedFileContents.length > 0 ? uploadedFileContents : undefined,
           restrictToFilesOnly: restrictToFiles,
           chatHistory: chatMessages,
+          contentFormat: formData.contentFormat,
         }),
       }).then(response => {
         console.log('Edge function call initiated, status:', response.status);
@@ -1761,7 +1762,12 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
                         </div>
                       </div>
 
-                      <div className="mt-4 bg-white border-2 border-blue-200 rounded-lg p-4">
+                      <div className="mt-4 bg-white border-2 border-blue-200 rounded-lg p-4 space-y-2">
+                        <p className="text-sm text-blue-900">
+                          <strong>Video Duration Optimization:</strong> Each lesson is automatically optimized to fit within 2.5 minutes
+                          of video narration (HeyGen has a 3-minute maximum). Content is carefully condensed while maintaining
+                          educational value and clarity.
+                        </p>
                         <p className="text-sm text-blue-900">
                           <strong>Note:</strong> Video generation adds 5-10 minutes to course creation time.
                           You'll be able to preview and regenerate any videos before publishing.
