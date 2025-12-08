@@ -267,6 +267,12 @@ export default function CustomizeLandingPage({
     if (aiActiveField === 'Course Headline') {
       const trimmedContent = content.substring(0, 100);
       setCourseHeadline(trimmedContent);
+    } else if (aiActiveField === 'Value Proposition') {
+      const trimmedContent = content.substring(0, 400);
+      setValueProposition(trimmedContent);
+    } else if (aiActiveField === 'Who Is This Course For?') {
+      const trimmedContent = content.substring(0, 300);
+      setAudienceDescription(trimmedContent);
     }
   };
 
@@ -398,30 +404,27 @@ export default function CustomizeLandingPage({
                   placeholder="e.g., Master Data Analysis in 2 Hours - No Experience Required"
                 />
                 <div className="text-right text-sm text-slate-500 mt-1">{courseHeadline.length}/100 characters</div>
-                <div className="bg-amber-50 border-2 border-amber-200 rounded-lg p-3 mt-3">
-                  <p className="text-sm font-semibold text-amber-900 mb-1 flex items-center gap-1">
-                    <Sparkles className="w-4 h-4" /> Examples:
-                  </p>
-                  <p className="text-sm text-amber-800 italic">
-                    "Learn Python Programming the Easy Way - Build Real Projects" • "Excel Mastery for Professionals - From Beginner to Advanced"
-                  </p>
-                </div>
               </div>
 
               <div>
                 <label htmlFor="valueProposition" className="block text-lg font-bold text-slate-900 mb-2">
                   Value Proposition
                 </label>
-                <p className="text-slate-600 mb-3 text-sm">
+                <p className="text-slate-600 mb-1 text-sm">
                   In 2-3 sentences, explain why someone should take this course. What transformation will they experience?
                 </p>
+                <AIFieldTrigger onClick={() => handleOpenAIPanel('Value Proposition')} />
                 <textarea
                   id="valueProposition"
                   value={valueProposition}
                   onChange={(e) => setValueProposition(e.target.value)}
                   maxLength={400}
                   rows={4}
-                  className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-600 focus:outline-none bg-slate-50 focus:bg-white transition-colors resize-none"
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none bg-slate-50 focus:bg-white transition-all resize-none mt-3 ${
+                    aiActiveField === 'Value Proposition' && isAIPanelOpen
+                      ? 'border-blue-400 ring-4 ring-blue-100 shadow-lg'
+                      : 'border-slate-200 focus:border-blue-600'
+                  }`}
                   placeholder="e.g., Learn the essential data analysis skills that top companies demand. Transform raw data into clear insights that drive business decisions."
                 />
                 <div className="text-right text-sm text-slate-500 mt-1">{valueProposition.length}/400 characters</div>
@@ -431,16 +434,21 @@ export default function CustomizeLandingPage({
                 <label htmlFor="audienceDescription" className="block text-lg font-bold text-slate-900 mb-2">
                   Who Is This Course For?
                 </label>
-                <p className="text-slate-600 mb-3 text-sm">
+                <p className="text-slate-600 mb-1 text-sm">
                   Describe your ideal student. Help visitors self-identify if this course is right for them.
                 </p>
+                <AIFieldTrigger onClick={() => handleOpenAIPanel('Who Is This Course For?')} />
                 <textarea
                   id="audienceDescription"
                   value={audienceDescription}
                   onChange={(e) => setAudienceDescription(e.target.value)}
                   maxLength={300}
                   rows={3}
-                  className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-600 focus:outline-none bg-slate-50 focus:bg-white transition-colors resize-none"
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none bg-slate-50 focus:bg-white transition-all resize-none mt-3 ${
+                    aiActiveField === 'Who Is This Course For?' && isAIPanelOpen
+                      ? 'border-blue-400 ring-4 ring-blue-100 shadow-lg'
+                      : 'border-slate-200 focus:border-blue-600'
+                  }`}
                   placeholder="e.g., Business professionals, managers, and entrepreneurs who work with data but don't have a technical background."
                 />
                 <div className="text-right text-sm text-slate-500 mt-1">{audienceDescription.length}/300 characters</div>
@@ -469,10 +477,15 @@ export default function CustomizeLandingPage({
                 <label className="block text-lg font-bold text-slate-900 mb-2">
                   Key Course Benefits
                 </label>
-                <p className="text-slate-600 mb-4 text-sm">
+                <p className="text-slate-600 mb-1 text-sm">
                   Highlight 2-4 key benefits or learning outcomes. What will students gain? These appear prominently on your landing page.
                 </p>
-                <div className="space-y-4">
+                <AIFieldTrigger onClick={() => handleOpenAIPanel('Key Course Benefits')} />
+                <div className={`space-y-4 mt-3 p-4 rounded-xl transition-all ${
+                  aiActiveField === 'Key Course Benefits' && isAIPanelOpen
+                    ? 'ring-4 ring-blue-100 bg-blue-50'
+                    : ''
+                }`}>
                   <div className="border-2 border-slate-200 rounded-xl p-4 bg-slate-50">
                     <label className="block text-sm font-semibold text-slate-700 mb-2">Benefit 1</label>
                     <input
@@ -845,9 +858,20 @@ export default function CustomizeLandingPage({
         fieldDescription={
           aiActiveField === 'Course Headline'
             ? "A catchy, benefit-focused headline that grabs attention. What's the main promise of your course?"
+            : aiActiveField === 'Value Proposition'
+            ? "In 2-3 sentences, explain why someone should take this course. What transformation will they experience?"
+            : aiActiveField === 'Who Is This Course For?'
+            ? "Describe your ideal student. Help visitors self-identify if this course is right for them."
+            : aiActiveField === 'Key Course Benefits'
+            ? "Highlight 2-4 key benefits or learning outcomes. What will students gain?"
             : ''
         }
-        currentValue={aiActiveField === 'Course Headline' ? courseHeadline : ''}
+        currentValue={
+          aiActiveField === 'Course Headline' ? courseHeadline
+          : aiActiveField === 'Value Proposition' ? valueProposition
+          : aiActiveField === 'Who Is This Course For?' ? audienceDescription
+          : ''
+        }
         courseTopic={courseTopicForAI}
         onInsert={handleInsertAIContent}
       />
