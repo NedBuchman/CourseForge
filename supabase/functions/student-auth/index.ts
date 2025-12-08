@@ -2,11 +2,24 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
-};
+const ALLOWED_ORIGINS = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+  'https://courseforge.app',
+  'https://www.courseforge.app',
+  'https://student.courseforge.app',
+];
+
+function getCorsHeaders(origin: string | null): HeadersInit {
+  const isAllowed = origin && ALLOWED_ORIGINS.includes(origin);
+  return {
+    "Access-Control-Allow-Origin": isAllowed ? origin : ALLOWED_ORIGINS[0],
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
+    "Access-Control-Allow-Credentials": "true",
+  };
+}
 
 interface RegisterRequest {
   email: string;
@@ -29,13 +42,110 @@ interface ResetPasswordRequest {
   newPassword: string;
 }
 
+const rateLimiter = new Map<string, number[]>();
+
+function isRateLimited(key: string, maxRequests = 5, windowMs = 60000): boolean {
+  const now = Date.now();
+  const requests = rateLimiter.get(key) || [];
+  const recentRequests = requests.filter(t => now - t < windowMs);
+
+  if (recentRequests.length >= maxRequests) {
+    return true;
+  }
+
+  rateLimiter.set(key, [...recentRequests, now]);
+  return false;
+}
+
+function cleanupRateLimiter() {
+  const now = Date.now();
+  for (const [key, requests] of rateLimiter.entries()) {
+    const recentRequests = requests.filter(t => now - t < 60000);
+    if (recentRequests.length === 0) {
+      rateLimiter.delete(key);
+    } else {
+      rateLimiter.set(key, recentRequests);
+    }
+  }
+}
+
+setInterval(cleanupRateLimiter, 60000);
+
+function validatePasswordStrength(password: string): { valid: boolean; error?: string } {
+  if (password.length < 12) {
+    return { valid: false, error: "Password must be at least 12 characters long" };
+  }
+
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+  const hasNumber = /\d/.test(password);
+  const hasSpecialChar = /[@$!%*?&#^()_\-+=\[\]{};:'",.<>\/\\|`~]/.test(password);
+
+  if (!hasUpperCase) {
+    return { valid: false, error: "Password must contain at least one uppercase letter" };
+  }
+  if (!hasLowerCase) {
+    return { valid: false, error: "Password must contain at least one lowercase letter" };
+  }
+  if (!hasNumber) {
+    return { valid: false, error: "Password must contain at least one number" };
+  }
+  if (!hasSpecialChar) {
+    return { valid: false, error: "Password must contain at least one special character" };
+  }
+
+  const commonPasswords = [
+    'password123', 'Password123!', '123456789', 'qwerty123', 'Admin123!',
+    'Welcome123!', 'Passw0rd!', 'Password1!', '12345678', 'abc123456'
+  ];
+
+  if (commonPasswords.includes(password)) {
+    return { valid: false, error: "This password is too common, please choose a stronger one" };
+  }
+
+  return { valid: true };
+}
+
+async function constantTimeDelay(targetMs = 500) {
+  const start = Date.now();
+  const elapsed = Date.now() - start;
+  const delay = Math.max(0, targetMs - elapsed);
+  if (delay > 0) {
+    await new Promise(resolve => setTimeout(resolve, delay));
+  }
+}
+
+async function logSecurityEvent(
+  supabase: any,
+  eventType: string,
+  result: 'success' | 'failure',
+  details?: any
+) {
+  try {
+    await supabase.rpc('log_security_event', {
+      p_event_type: eventType,
+      p_resource_type: 'student_account',
+      p_action: eventType,
+      p_result: result,
+      p_details: details || {}
+    });
+  } catch (error) {
+    console.error('Failed to log security event:', error);
+  }
+}
+
 Deno.serve(async (req: Request) => {
+  const origin = req.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
+
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 200,
       headers: corsHeaders,
     });
   }
+
+  const startTime = Date.now();
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -45,6 +155,26 @@ Deno.serve(async (req: Request) => {
     const url = new URL(req.url);
     const action = url.searchParams.get("action");
 
+    const clientIp = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+    const rateLimitKey = `${action}:${clientIp}`;
+
+    if (isRateLimited(rateLimitKey, 10, 60000)) {
+      await logSecurityEvent(supabase, `${action}_rate_limited`, 'failure', { ip: clientIp });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Too many requests. Please try again later.",
+        }),
+        {
+          status: 429,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
     if (action === "register") {
       const { email, password, firstName, lastName }: RegisterRequest = await req.json();
 
@@ -52,8 +182,9 @@ Deno.serve(async (req: Request) => {
         throw new Error("Email and password are required");
       }
 
-      if (password.length < 8) {
-        throw new Error("Password must be at least 8 characters long");
+      const passwordValidation = validatePasswordStrength(password);
+      if (!passwordValidation.valid) {
+        throw new Error(passwordValidation.error!);
       }
 
       const { data: existingUser } = await supabase
@@ -63,6 +194,7 @@ Deno.serve(async (req: Request) => {
         .maybeSingle();
 
       if (existingUser) {
+        await logSecurityEvent(supabase, 'register_duplicate_email', 'failure', { email: email.toLowerCase() });
         throw new Error("An account with this email already exists");
       }
 
@@ -82,14 +214,20 @@ Deno.serve(async (req: Request) => {
 
       if (insertError) {
         console.error("Insert error:", insertError);
+        await logSecurityEvent(supabase, 'register_failed', 'failure', { error: insertError.message });
         throw new Error("Failed to create account");
       }
+
+      await logSecurityEvent(supabase, 'register_success', 'success', { student_id: newStudent.id });
 
       return new Response(
         JSON.stringify({
           success: true,
           message: "Account created successfully",
-          student: newStudent,
+          student: {
+            id: newStudent.id,
+            email: newStudent.email,
+          },
         }),
         {
           headers: {
@@ -99,6 +237,7 @@ Deno.serve(async (req: Request) => {
         }
       );
     } else if (action === "login") {
+      const requestStart = Date.now();
       const { email, password }: LoginRequest = await req.json();
 
       if (!email || !password) {
@@ -111,13 +250,17 @@ Deno.serve(async (req: Request) => {
         .eq("email", email.toLowerCase())
         .maybeSingle();
 
-      if (fetchError || !student) {
-        throw new Error("Invalid email or password");
+      let isValidPassword = false;
+      if (student) {
+        isValidPassword = await bcrypt.compare(password, student.password_hash);
+      } else {
+        await bcrypt.hash(password);
       }
 
-      const isValidPassword = await bcrypt.compare(password, student.password_hash);
+      await constantTimeDelay(500);
 
-      if (!isValidPassword) {
+      if (fetchError || !student || !isValidPassword) {
+        await logSecurityEvent(supabase, 'login_failed', 'failure', { email: email.toLowerCase() });
         throw new Error("Invalid email or password");
       }
 
@@ -125,6 +268,8 @@ Deno.serve(async (req: Request) => {
         .from("student_accounts")
         .update({ last_login_at: new Date().toISOString() })
         .eq("id", student.id);
+
+      await logSecurityEvent(supabase, 'login_success', 'success', { student_id: student.id });
 
       return new Response(
         JSON.stringify({
@@ -145,6 +290,7 @@ Deno.serve(async (req: Request) => {
         }
       );
     } else if (action === "forgot-password") {
+      const requestStart = Date.now();
       const { email }: ForgotPasswordRequest = await req.json();
 
       if (!email) {
@@ -157,38 +303,30 @@ Deno.serve(async (req: Request) => {
         .eq("email", email.toLowerCase())
         .maybeSingle();
 
-      if (!student) {
-        return new Response(
-          JSON.stringify({
-            success: true,
-            message: "If an account exists with this email, a password reset link has been sent",
-          }),
-          {
-            headers: {
-              ...corsHeaders,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+      if (student) {
+        const resetToken = crypto.randomUUID();
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 1);
+
+        await supabase
+          .from("student_accounts")
+          .update({
+            reset_password_token: resetToken,
+            reset_password_expires: expiresAt.toISOString(),
+          })
+          .eq("id", student.id);
+
+        await logSecurityEvent(supabase, 'forgot_password_initiated', 'success', {
+          student_id: student.id
+        });
       }
 
-      const resetToken = crypto.randomUUID();
-      const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 1);
-
-      await supabase
-        .from("student_accounts")
-        .update({
-          reset_password_token: resetToken,
-          reset_password_expires: expiresAt.toISOString(),
-        })
-        .eq("id", student.id);
+      await constantTimeDelay(500);
 
       return new Response(
         JSON.stringify({
           success: true,
-          message: "Password reset instructions sent to your email",
-          resetToken,
+          message: "If an account exists with this email, a password reset link has been sent",
         }),
         {
           headers: {
@@ -204,8 +342,9 @@ Deno.serve(async (req: Request) => {
         throw new Error("Token and new password are required");
       }
 
-      if (newPassword.length < 8) {
-        throw new Error("Password must be at least 8 characters long");
+      const passwordValidation = validatePasswordStrength(newPassword);
+      if (!passwordValidation.valid) {
+        throw new Error(passwordValidation.error!);
       }
 
       const { data: student } = await supabase
@@ -215,10 +354,12 @@ Deno.serve(async (req: Request) => {
         .maybeSingle();
 
       if (!student) {
+        await logSecurityEvent(supabase, 'password_reset_invalid_token', 'failure', { token_prefix: token.substring(0, 8) });
         throw new Error("Invalid or expired reset token");
       }
 
       if (new Date(student.reset_password_expires) < new Date()) {
+        await logSecurityEvent(supabase, 'password_reset_expired_token', 'failure', { student_id: student.id });
         throw new Error("Reset token has expired");
       }
 
@@ -232,6 +373,8 @@ Deno.serve(async (req: Request) => {
           reset_password_expires: null,
         })
         .eq("id", student.id);
+
+      await logSecurityEvent(supabase, 'password_reset_success', 'success', { student_id: student.id });
 
       return new Response(
         JSON.stringify({

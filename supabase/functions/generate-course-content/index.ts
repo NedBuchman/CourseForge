@@ -1,11 +1,13 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
-};
+import {
+  getCorsHeaders,
+  isRateLimited,
+  verifyAuthentication,
+  verifyCourseOwnership,
+  validateCourseRequest,
+  logSecurityEvent
+} from "../_shared/security.ts";
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -55,6 +57,9 @@ async function updateProgress(
 }
 
 Deno.serve(async (req: Request) => {
+  const origin = req.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
+
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 200,
@@ -65,20 +70,103 @@ Deno.serve(async (req: Request) => {
   let courseId: string | undefined;
 
   try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const clientIp = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+    const rateLimitKey = `generate-course:${clientIp}`;
+
+    if (isRateLimited(rateLimitKey, 3, 300000)) {
+      await logSecurityEvent(supabase, 'generate_course_rate_limited', 'failure', 'course', undefined, { ip: clientIp });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Too many course generation requests. Please wait 5 minutes before trying again.",
+        }),
+        {
+          status: 429,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    const userId = await verifyAuthentication(req);
+    if (!userId) {
+      await logSecurityEvent(supabase, 'generate_course_unauthorized', 'failure', 'course');
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Unauthorized: Authentication required",
+        }),
+        {
+          status: 401,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    const requestData: CourseRequest = await req.json();
+
+    const validation = validateCourseRequest(requestData);
+    if (!validation.valid) {
+      await logSecurityEvent(supabase, 'generate_course_invalid_input', 'failure', 'course', requestData.courseId, {
+        error: validation.error
+      });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: validation.error,
+        }),
+        {
+          status: 400,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    const { courseId: reqCourseId, subject, audience, difficulty, duration, objectives, context, uploadedFileContents, restrictToFilesOnly, chatHistory, contentFormat } = requestData;
+
+    courseId = reqCourseId;
+
+    const ownsCourse = await verifyCourseOwnership(supabase, courseId, userId);
+    if (!ownsCourse) {
+      await logSecurityEvent(supabase, 'generate_course_unauthorized_access', 'failure', 'course', courseId, {
+        user_id: userId
+      });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Unauthorized: You do not have permission to generate content for this course",
+        }),
+        {
+          status: 403,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    await logSecurityEvent(supabase, 'generate_course_started', 'success', 'course', courseId, {
+      user_id: userId
+    });
+
     const claudeApiKey = Deno.env.get("ANTHROPIC_API_KEY");
     if (!claudeApiKey) {
       console.error("ANTHROPIC_API_KEY is not configured in Supabase project secrets");
       throw new Error("ANTHROPIC_API_KEY not configured. Please add it to Supabase project secrets.");
     }
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    const requestData: CourseRequest = await req.json();
-    const { courseId: reqCourseId, subject, audience, difficulty, duration, objectives, context, uploadedFileContents, restrictToFilesOnly, chatHistory, contentFormat } = requestData;
-
-    courseId = reqCourseId;
 
     const isVideoFormat = contentFormat === 'video';
     const targetWordCount = isVideoFormat ? 350 : 600;

@@ -91,22 +91,40 @@ export default function AnalyticsDashboard({ onBack }: AnalyticsDashboardProps) 
         return;
       }
 
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (roleError || !roleData || (roleData.role !== 'admin' && roleData.role !== 'manager')) {
+        setError('Unauthorized: Manager or Admin access required to view analytics');
+        setLoading(false);
+        return;
+      }
+
       const [statsResult, topicsResult, funnelResult, difficultyResult, coursesResult] =
         await Promise.all([
-          supabase.from('analytics_platform_overview').select('*').single(),
+          supabase.rpc('get_platform_overview'),
           supabase.from('analytics_course_topics').select('*').limit(10),
           supabase.from('analytics_workflow_funnel').select('*').single(),
           supabase.from('analytics_difficulty_distribution').select('*'),
           supabase.from('analytics_popular_courses').select('*').limit(10),
         ]);
 
-      if (statsResult.error) throw statsResult.error;
+      if (statsResult.error) {
+        if (statsResult.error.message?.includes('Unauthorized')) {
+          setError('Access Denied: You do not have permission to view platform analytics');
+          return;
+        }
+        throw statsResult.error;
+      }
       if (topicsResult.error) throw topicsResult.error;
       if (funnelResult.error) throw funnelResult.error;
       if (difficultyResult.error) throw difficultyResult.error;
       if (coursesResult.error) throw coursesResult.error;
 
-      setPlatformStats(statsResult.data);
+      setPlatformStats(statsResult.data?.[0] || null);
       setTopicData(topicsResult.data || []);
       setWorkflowFunnel(funnelResult.data);
       setDifficultyData(difficultyResult.data || []);
