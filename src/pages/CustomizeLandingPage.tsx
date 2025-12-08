@@ -278,8 +278,19 @@ export default function CustomizeLandingPage({
     } else if (aiActiveField === 'Key Course Benefits') {
       const lines = content.split('\n').filter(line => line.trim());
 
-      lines.forEach((line, index) => {
-        let cleanLine = line.replace(/^(Benefit\s*\d+[:.)\s-]*|^\d+[:.)\s-]*)/i, '').trim();
+      const benefitLines = lines.filter(line => {
+        const trimmedLine = line.trim();
+        if (trimmedLine.length < 10) return false;
+        if (/^(here\s+(are|is)|i('ve|\s+have)|the\s+following|below\s+(are|is))/i.test(trimmedLine)) return false;
+        const hasSeparator = /[-–—:]/.test(trimmedLine);
+        if (!hasSeparator) return false;
+
+        return true;
+      });
+
+      benefitLines.forEach((line, index) => {
+        let cleanLine = line.replace(/^(Benefit\s*\d+[:.)\s-]*|^\d+[:.)\s-]*|\*\*)/gi, '').trim();
+        cleanLine = cleanLine.replace(/\*\*/g, '').trim();
 
         const separatorMatch = cleanLine.match(/\s*[-–—:]\s*/);
         if (separatorMatch) {
