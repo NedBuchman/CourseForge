@@ -234,7 +234,7 @@ Deno.serve(async (req: Request) => {
     console.log("Calling Claude API...");
     await updateProgress(supabase, courseId, 15, `Generating ${lessonCount} lessons with AI...`, 0, []);
 
-    const timeoutDuration = 540000;
+    const timeoutDuration = 180000;
     const maxRetries = 2;
     let claudeResponse;
     let lastError;
@@ -287,7 +287,7 @@ Deno.serve(async (req: Request) => {
         if (fetchError.name === 'AbortError') {
           if (attempt === maxRetries) {
             console.error(`Claude API timeout after ${timeoutDuration / 1000} seconds (all retries exhausted)`);
-            throw new Error(`Course generation timed out after ${maxRetries + 1} attempts. The AI took too long to generate content. Please try: 1) Creating a shorter course, 2) Simplifying your requirements, or 3) Trying again in a few minutes.`);
+            throw new Error(`Course generation timed out after ${maxRetries + 1} attempts (${(timeoutDuration * (maxRetries + 1)) / 60000} minutes total). The AI took too long to generate content. Please try: 1) Creating a shorter course (e.g., 30 min or 1 hour), 2) Simplifying your requirements, or 3) Trying again in a few minutes.`);
           }
           continue;
         }

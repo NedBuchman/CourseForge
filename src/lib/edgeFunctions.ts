@@ -3,8 +3,12 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 export async function callEdgeFunction<T>(
   functionName: string,
-  payload: any
+  payload: any,
+  timeoutMs: number = 600000
 ): Promise<T> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
     const response = await fetch(
       `${SUPABASE_URL}/functions/v1/${functionName}`,
@@ -15,9 +19,11 @@ export async function callEdgeFunction<T>(
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       }
     );
 
+    clearTimeout(timeoutId);
     const data = await response.json();
 
     if (!response.ok) {
@@ -31,7 +37,13 @@ export async function callEdgeFunction<T>(
 
     return data;
   } catch (error: any) {
+    clearTimeout(timeoutId);
     console.error(`Error calling edge function ${functionName}:`, error);
+
+    if (error.name === 'AbortError') {
+      throw new Error(`Request timeout: The ${functionName} operation took too long to complete. Please try again with a shorter course or simpler requirements.`);
+    }
+
     throw new Error(error.message || `Failed to fetch`);
   }
 }
