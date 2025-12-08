@@ -9,26 +9,30 @@ console.log('Supabase Configuration:', {
   url: supabaseUrl ? supabaseUrl : 'undefined',
 });
 
+let supabaseClient;
+
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Supabase configuration error:', {
     hasUrl: !!supabaseUrl,
     hasKey: !!supabaseAnonKey,
     url: supabaseUrl ? `${supabaseUrl.substring(0, 20)}...` : 'undefined',
   });
-  throw new Error(
-    'Missing Supabase environment variables. Please ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in your .env file.'
+  console.warn(
+    'Missing Supabase environment variables. App will show configuration error.'
   );
+  supabaseClient = null;
+} else {
+  supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true
+    }
+  });
+  console.log('Supabase client initialized successfully');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true
-  }
-});
-
-console.log('Supabase client initialized successfully');
+export const supabase = supabaseClient as ReturnType<typeof createClient>;
 
 export function validateSupabaseConfig(): { isValid: boolean; error?: string } {
   if (!supabaseUrl || !supabaseAnonKey) {
