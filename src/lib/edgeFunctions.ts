@@ -18,13 +18,12 @@ export async function callEdgeFunction<T>(
       }
     );
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Edge function ${functionName} error:`, errorText);
-      throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
-    }
-
     const data = await response.json();
+
+    if (!response.ok) {
+      console.error(`Edge function ${functionName} error:`, data);
+      throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
 
     if (!data.success) {
       throw new Error(data.error || `Failed to call ${functionName}`);

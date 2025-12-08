@@ -63,11 +63,26 @@ export default function CustomizeLandingPage({
 
   const loadExistingConfig = async () => {
     try {
-      const { data, error } = await supabase
-        .from('landing_page_configs')
-        .select('*')
-        .eq('course_id', courseId)
-        .maybeSingle();
+      const [landingPageResult, courseResult] = await Promise.all([
+        supabase
+          .from('landing_page_configs')
+          .select('*')
+          .eq('course_id', courseId)
+          .maybeSingle(),
+        supabase
+          .from('courses')
+          .select('subject, audience, difficulty, objectives')
+          .eq('id', courseId)
+          .single()
+      ]);
+
+      if (courseResult.data) {
+        const { subject, audience, difficulty, objectives } = courseResult.data;
+        const courseContext = `${subject} (${difficulty} level for ${audience})${objectives ? '. Objectives: ' + objectives : ''}`;
+        setCourseTopicForAI(courseContext);
+      }
+
+      const { data, error } = landingPageResult;
 
       if (error) {
         console.error('Error loading landing page config:', error);

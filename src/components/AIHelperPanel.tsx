@@ -66,6 +66,14 @@ export default function AIHelperPanel({
   const handleAutoGenerate = async () => {
     setIsLoading(true);
     try {
+      console.log('Calling AI assistant with:', {
+        fieldName,
+        fieldDescription,
+        currentValue,
+        courseTopic,
+        action: 'generate',
+      });
+
       const response = await callEdgeFunction('landing-page-assistant', {
         fieldName,
         fieldDescription,
@@ -74,22 +82,27 @@ export default function AIHelperPanel({
         action: 'generate',
       });
 
+      console.log('AI assistant response:', response);
+
       if (response.success) {
         setMessages([{ role: 'assistant', content: response.content }]);
       } else {
+        const errorMessage = response.error || 'Sorry, I encountered an error. Please try again.';
+        console.error('AI assistant returned error:', errorMessage);
         setMessages([
           {
             role: 'assistant',
-            content: 'Sorry, I encountered an error. Please try again.',
+            content: errorMessage,
           },
         ]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error calling AI assistant:', error);
+      const errorMessage = error?.message || 'Sorry, I encountered an error. Please try again.';
       setMessages([
         {
           role: 'assistant',
-          content: 'Sorry, I encountered an error. Please try again.',
+          content: `Error: ${errorMessage}`,
         },
       ]);
     } finally {
@@ -117,21 +130,24 @@ export default function AIHelperPanel({
       if (response.success) {
         setMessages((prev) => [...prev, { role: 'assistant', content: response.content }]);
       } else {
+        const errorMessage = response.error || 'Sorry, I encountered an error. Please try again.';
+        console.error('AI assistant returned error:', errorMessage);
         setMessages((prev) => [
           ...prev,
           {
             role: 'assistant',
-            content: 'Sorry, I encountered an error. Please try again.',
+            content: errorMessage,
           },
         ]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error calling AI assistant:', error);
+      const errorMessage = error?.message || 'Sorry, I encountered an error. Please try again.';
       setMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
-          content: 'Sorry, I encountered an error. Please try again.',
+          content: `Error: ${errorMessage}`,
         },
       ]);
     } finally {

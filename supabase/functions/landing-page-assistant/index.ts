@@ -75,10 +75,17 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body: RequestBody = await req.json();
-    const { fieldName, action = "generate", customPrompt } = body;
+    const { fieldName, action = "generate", customPrompt, courseTopic } = body;
+
+    console.log("Landing page assistant request:", { fieldName, action, hasCourseTopic: !!courseTopic });
 
     if (!ANTHROPIC_API_KEY) {
-      throw new Error("ANTHROPIC_API_KEY not configured");
+      console.error("ANTHROPIC_API_KEY not configured in environment");
+      throw new Error("AI service not configured. Please contact support.");
+    }
+
+    if (!fieldName) {
+      throw new Error("fieldName is required");
     }
 
     const systemPrompt = generateSystemPrompt(fieldName);
@@ -89,6 +96,8 @@ Deno.serve(async (req: Request) => {
     } else if (action === "regenerate") {
       userPrompt += " Give me different options than before.";
     }
+
+    console.log("Calling Anthropic API with:", { systemPrompt: systemPrompt.substring(0, 50), userPrompt: userPrompt.substring(0, 100) });
 
     const anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -112,12 +121,19 @@ Deno.serve(async (req: Request) => {
 
     if (!anthropicResponse.ok) {
       const errorData = await anthropicResponse.text();
-      console.error("Anthropic API error:", errorData);
-      throw new Error(`Anthropic API error: ${anthropicResponse.status}`);
+      console.error("Anthropic API error:", { status: anthropicResponse.status, errorData });
+      throw new Error(`AI service error (${anthropicResponse.status}). Please try again.`);
     }
 
     const anthropicData = await anthropicResponse.json();
-    const content = anthropicData.content[0].text;
+    const content = anthropicData.content?.[0]?.text;
+
+    if (!content) {
+      console.error("No content in Anthropic response:", anthropicData);
+      throw new Error("AI service returned empty response. Please try again.");
+    }
+
+    console.log("Successfully generated content, length:", content.length);
 
     return new Response(
       JSON.stringify({
@@ -134,10 +150,12 @@ Deno.serve(async (req: Request) => {
     );
   } catch (error) {
     console.error("Error in landing-page-assistant:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+
     return new Response(
       JSON.stringify({
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: errorMessage,
       }),
       {
         status: 500,
