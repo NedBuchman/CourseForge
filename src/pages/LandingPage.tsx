@@ -350,8 +350,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
       <section className="py-20 px-6 bg-gradient-to-br from-yellow-50 to-yellow-100">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-12">
-            <h2 className="text-5xl font-black text-yellow-900 mb-4">Social Proof</h2>
-            <p className="text-xl text-yellow-700">Join the course creation revolution</p>
+            <h2 className="text-5xl font-black text-yellow-900">Join the Course Creation Revolution!</h2>
           </div>
 
           <div className="grid md:grid-cols-4 gap-8">
@@ -375,7 +374,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
 
             <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
               <Clock className="w-16 h-16 text-purple-500 mx-auto mb-4" />
-              <div className="text-5xl font-black text-slate-900 mb-2">4 Min</div>
+              <div className="text-5xl font-black text-slate-900 mb-2">10 Min</div>
               <p className="text-slate-700 text-lg">Average Creation Time</p>
             </div>
           </div>
