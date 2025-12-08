@@ -38,12 +38,16 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
                   loading="eager"
                 />
               ) : (
-                <GraduationCap className="h-12 w-12 text-blue-600" />
+                <GraduationCap className={`h-12 w-12 ${isHeaderSticky ? 'text-blue-600' : 'text-white'}`} />
               )}
-              <span className="text-2xl font-bold text-slate-900">CourseForge</span>
+              <span className={`text-2xl font-bold ${isHeaderSticky ? 'text-slate-900' : 'text-white'}`}>CourseForge</span>
             </div>
             <div className="flex items-center space-x-6">
-              <a href="#features" className="text-slate-700 hover:text-blue-600 font-medium transition-colors">
+              <a href="#features" className={`font-medium transition-colors ${
+                isHeaderSticky
+                  ? 'text-slate-700 hover:text-blue-600'
+                  : 'text-white hover:text-yellow-400'
+              }`}>
                 Features
               </a>
               <button
