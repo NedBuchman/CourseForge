@@ -695,37 +695,68 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
       console.log('Starting async course generation:', edgeFunctionUrl);
       console.log('Course ID:', courseId);
 
-      fetch(edgeFunctionUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'apikey': supabaseAnonKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          courseId: courseId,
-          subject: formData.subject,
-          audience: formData.audience,
-          difficulty: formData.difficulty,
-          duration: formData.duration,
-          objectives: formData.objectives,
-          context: formData.context,
-          uploadedFileContents: uploadedFileContents.length > 0 ? uploadedFileContents : undefined,
-          restrictToFilesOnly: restrictToFiles,
-          chatHistory: chatMessages,
-          contentFormat: formData.contentFormat,
-        }),
-      }).then(response => {
-        console.log('Edge function call initiated, status:', response.status);
-      }).catch(err => {
-        console.error('Edge function call failed to initiate:', err);
-      });
+      const edgeFunctionController = new AbortController();
+      const edgeFunctionTimeoutId = setTimeout(() => edgeFunctionController.abort(), 30000);
+
+      try {
+        const edgeFunctionResponse = await fetch(edgeFunctionUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'apikey': supabaseAnonKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            courseId: courseId,
+            subject: formData.subject,
+            audience: formData.audience,
+            difficulty: formData.difficulty,
+            duration: formData.duration,
+            objectives: formData.objectives,
+            context: formData.context,
+            uploadedFileContents: uploadedFileContents.length > 0 ? uploadedFileContents : undefined,
+            restrictToFilesOnly: restrictToFiles,
+            chatHistory: chatMessages,
+            contentFormat: formData.contentFormat,
+          }),
+          signal: edgeFunctionController.signal,
+        });
+
+        clearTimeout(edgeFunctionTimeoutId);
+
+        if (!edgeFunctionResponse.ok) {
+          const errorData = await edgeFunctionResponse.json().catch(() => ({}));
+          const errorMessage = errorData.error || `Edge function returned status ${edgeFunctionResponse.status}`;
+          console.error('Edge function error:', errorMessage);
+
+          if (errorMessage.includes('ANTHROPIC_API_KEY')) {
+            throw new Error('Configuration error: The AI service (Claude API) is not properly configured. Please ensure the ANTHROPIC_API_KEY is set in your Supabase project settings under Edge Functions > Secrets.');
+          }
+
+          throw new Error(errorMessage);
+        }
+
+        console.log('Edge function call accepted, status:', edgeFunctionResponse.status);
+      } catch (err: any) {
+        clearTimeout(edgeFunctionTimeoutId);
+
+        if (err.name === 'AbortError') {
+          console.error('Edge function call timed out after 30 seconds');
+          throw new Error('Failed to start course generation: The request timed out. Please check your internet connection and try again.');
+        }
+
+        console.error('Edge function call failed:', err);
+        throw new Error(err.message || 'Failed to start course generation. Please try again.');
+      }
 
       clearInterval(progressInterval);
 
       let pollAttempts = 0;
       const maxPollAttempts = 180;
       const pollInterval = 2000;
+      let lastProgress = 15;
+      let lastProgressChange = Date.now();
+      let stuckWarningShown = false;
 
       const pollForCompletion = async (): Promise<boolean> => {
         pollAttempts++;
@@ -738,7 +769,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
         try {
           const { data: courseData, error: pollError } = await supabase
             .from('courses')
-            .select('status, generation_progress, generation_stage, generated_content, generation_error, current_lesson_generating, content_format, video_generation_status, video_generation_progress, video_generation_stage, videos_generated_count, videos_total_count, video_generation_started_at, estimated_completion_time')
+            .select('status, generation_progress, generation_stage, generated_content, generation_error, current_lesson_generating, content_format, video_generation_status, video_generation_progress, video_generation_stage, videos_generated_count, videos_total_count, video_generation_started_at, estimated_completion_time, generation_last_heartbeat')
             .eq('id', courseId)
             .single();
 
@@ -752,7 +783,30 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
             return false;
           }
 
-          setGenerationProgress(courseData.generation_progress || 0);
+          const currentProgress = courseData.generation_progress || 0;
+
+          if (currentProgress !== lastProgress) {
+            lastProgress = currentProgress;
+            lastProgressChange = Date.now();
+            stuckWarningShown = false;
+          }
+
+          const timeSinceLastChange = Date.now() - lastProgressChange;
+
+          if (timeSinceLastChange > 90000 && currentProgress <= 15 && !stuckWarningShown) {
+            console.error('Course generation appears stuck at', currentProgress, '% for', Math.floor(timeSinceLastChange / 1000), 'seconds');
+            stuckWarningShown = true;
+
+            const heartbeatAge = courseData.generation_last_heartbeat
+              ? Date.now() - new Date(courseData.generation_last_heartbeat).getTime()
+              : null;
+
+            if (!heartbeatAge || heartbeatAge > 120000) {
+              throw new Error('Course generation appears to have stalled. This usually means the AI service (Claude API) is not responding or your API key is invalid. Please check your Supabase Edge Functions settings and ensure ANTHROPIC_API_KEY is correctly configured.');
+            }
+          }
+
+          setGenerationProgress(currentProgress);
           setGenerationStage(courseData.generation_stage || 'Processing...');
 
           if (courseData.status === 'completed') {
