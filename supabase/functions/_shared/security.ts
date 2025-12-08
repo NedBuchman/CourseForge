@@ -14,10 +14,13 @@ const ALLOWED_ORIGINS = [
 
 export function getCorsHeaders(origin: string | null): HeadersInit {
   const isLocalhost = origin && (origin.includes('localhost') || origin.includes('127.0.0.1'));
-  const isAllowed = origin && (ALLOWED_ORIGINS.includes(origin) || isLocalhost);
+  const isWebContainer = origin && origin.includes('webcontainer-api.io');
+  const isStackBlitz = origin && (origin.includes('stackblitz.io') || origin.includes('webcontainer.io'));
+  const isDevelopment = isLocalhost || isWebContainer || isStackBlitz;
+  const isAllowed = origin && (ALLOWED_ORIGINS.includes(origin) || isDevelopment);
 
   return {
-    "Access-Control-Allow-Origin": isAllowed ? origin : (isLocalhost ? origin : ALLOWED_ORIGINS[0]),
+    "Access-Control-Allow-Origin": isAllowed ? origin : "*",
     "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
     "Access-Control-Allow-Credentials": "true",
