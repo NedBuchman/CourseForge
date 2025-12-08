@@ -83,7 +83,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
             </h1>
 
             <div className="inline-block bg-red-500 text-white px-8 py-4 rounded-full text-2xl font-bold mb-8 shadow-xl">
-              Transform 40 Hours into 4 Minutes
+              Transform 100 Hours into 10 Minutes
             </div>
 
             <p className="text-xl text-blue-100 mb-10 max-w-3xl mx-auto leading-relaxed">
