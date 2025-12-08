@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Video, CheckCircle, XCircle, RefreshCw, Clock, Eye, Download, Loader } from 'lucide-react';
+import { Video, CheckCircle, XCircle, RefreshCw, Clock, Eye, Download, Loader, ArrowLeft, Home } from 'lucide-react';
 import Toast from '../components/Toast';
 
 interface VideoAsset {
@@ -22,9 +22,10 @@ interface ReviewVideosProps {
   courseId: string;
   onComplete: () => void;
   onBack: () => void;
+  onBackToCourses?: () => void;
 }
 
-const ReviewVideos: React.FC<ReviewVideosProps> = ({ courseId, onComplete, onBack }) => {
+const ReviewVideos: React.FC<ReviewVideosProps> = ({ courseId, onComplete, onBack, onBackToCourses }) => {
   const [videos, setVideos] = useState<VideoAsset[]>([]);
   const [selectedVideo, setSelectedVideo] = useState<VideoAsset | null>(null);
   const [loading, setLoading] = useState(true);
@@ -229,12 +230,27 @@ const ReviewVideos: React.FC<ReviewVideosProps> = ({ courseId, onComplete, onBac
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-12 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <button
-            onClick={onBack}
-            className="text-blue-600 hover:text-blue-700 font-medium mb-4"
-          >
-            ← Back to Course
-          </button>
+          <div className="flex items-center gap-4 mb-4">
+            <button
+              onClick={onBack}
+              className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-2"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              Back to Course
+            </button>
+            {onBackToCourses && (
+              <>
+                <span className="text-slate-300">|</span>
+                <button
+                  onClick={onBackToCourses}
+                  className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-2"
+                >
+                  <Home className="w-5 h-5" />
+                  Back to Courses
+                </button>
+              </>
+            )}
+          </div>
 
           <h1 className="text-4xl font-bold text-slate-900 mb-2">Review Course Videos</h1>
           <p className="text-xl text-slate-600">{courseTitle}</p>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Monitor, Tablet, Smartphone, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Monitor, Tablet, Smartphone, CheckCircle, Home } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface CourseContent {
@@ -40,6 +40,7 @@ interface ReviewLandingPageProps {
   courseContent: CourseContent;
   onBack: () => void;
   onComplete: () => void;
+  onBackToCourses?: () => void;
 }
 
 type DeviceType = 'desktop' | 'tablet' | 'mobile';
@@ -48,7 +49,8 @@ export default function ReviewLandingPage({
   courseId,
   courseContent,
   onBack,
-  onComplete
+  onComplete,
+  onBackToCourses
 }: ReviewLandingPageProps) {
   const [device, setDevice] = useState<DeviceType>('desktop');
   const [landingConfig, setLandingConfig] = useState<LandingPageConfig | null>(null);
@@ -118,13 +120,24 @@ export default function ReviewLandingPage({
             <img src="/CourseForgeLogo.png" alt="CourseForge" className="h-8 w-auto" />
             <span className="text-2xl font-black">COURSEFORGE</span>
           </div>
-          <button
-            onClick={onBack}
-            className="text-white hover:text-blue-200 transition-colors flex items-center gap-2"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Back to Customize</span>
-          </button>
+          <div className="flex items-center gap-4">
+            {onBackToCourses && (
+              <button
+                onClick={onBackToCourses}
+                className="text-blue-100 hover:text-white transition-colors flex items-center gap-2"
+              >
+                <Home className="w-5 h-5" />
+                <span>Back to Courses</span>
+              </button>
+            )}
+            <button
+              onClick={onBack}
+              className="text-white hover:text-blue-200 transition-colors flex items-center gap-2"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>Back to Customize</span>
+            </button>
+          </div>
         </div>
       </header>
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, Sparkles, BookOpen, Shield, CheckCircle, Clock, TrendingUp, AlertCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Sparkles, BookOpen, Shield, CheckCircle, Clock, TrendingUp, AlertCircle, Home } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Lesson {
@@ -31,13 +31,15 @@ interface GenerateQuizzesProps {
   courseContent: CourseContent;
   onBack: () => void;
   onComplete: () => void;
+  onBackToCourses?: () => void;
 }
 
 export default function GenerateQuizzes({
   courseId,
   courseContent,
   onBack,
-  onComplete
+  onComplete,
+  onBackToCourses
 }: GenerateQuizzesProps) {
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -301,13 +303,24 @@ export default function GenerateQuizzes({
             <img src="/CourseForgeLogo.png" alt="CourseForge" className="h-8 w-auto" />
             <span className="text-2xl font-black">COURSEFORGE</span>
           </div>
-          <button
-            onClick={onBack}
-            className="text-white hover:text-blue-200 transition-colors flex items-center gap-2"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Back to Course</span>
-          </button>
+          <div className="flex items-center gap-4">
+            {onBackToCourses && (
+              <button
+                onClick={onBackToCourses}
+                className="text-blue-100 hover:text-white transition-colors flex items-center gap-2"
+              >
+                <Home className="w-5 h-5" />
+                <span>Back to Courses</span>
+              </button>
+            )}
+            <button
+              onClick={onBack}
+              className="text-white hover:text-blue-200 transition-colors flex items-center gap-2"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>Back to Course</span>
+            </button>
+          </div>
         </div>
       </header>
 

@@ -1339,6 +1339,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
         courseId={currentCourseId}
         courseContent={courseContent}
         onCreateAnother={handleCreateAnotherCourse}
+        onBackToCourses={onBack}
       />
     );
   }
@@ -1350,6 +1351,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
         courseContent={courseContent}
         onBack={handleBackFromLandingPageReview}
         onComplete={handleLandingPageReviewComplete}
+        onBackToCourses={onBack}
       />
     );
   }
@@ -1361,6 +1363,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
         courseContent={courseContent}
         onBack={handleBackFromLandingPageCustomization}
         onComplete={handleLandingPageCustomizationComplete}
+        onBackToCourses={onBack}
       />
     );
   }
@@ -1372,6 +1375,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
         courseContent={courseContent}
         onBack={handleBackFromPresentationReview}
         onComplete={handlePresentationReviewComplete}
+        onBackToCourses={onBack}
       />
     );
   }
@@ -1383,6 +1387,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
         courseContent={courseContent}
         onBack={handleBackFromPresentationGeneration}
         onComplete={handlePresentationGenerationComplete}
+        onBackToCourses={onBack}
       />
     );
   }
@@ -1394,6 +1399,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
         courseContent={courseContent}
         onBack={handleBackFromQuizGeneration}
         onComplete={handleQuizGenerationComplete}
+        onBackToCourses={onBack}
       />
     );
   }

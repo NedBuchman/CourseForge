@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, Upload, Palette, Target, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Upload, Palette, Target, Sparkles, Home } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface CourseContent {
@@ -13,6 +13,7 @@ interface CustomizeLandingPageProps {
   courseContent: CourseContent;
   onBack: () => void;
   onComplete: () => void;
+  onBackToCourses?: () => void;
 }
 
 type PageStyle = 'professional' | 'modern' | 'minimal' | 'friendly';
@@ -20,7 +21,8 @@ type PageStyle = 'professional' | 'modern' | 'minimal' | 'friendly';
 export default function CustomizeLandingPage({
   courseId,
   onBack,
-  onComplete
+  onComplete,
+  onBackToCourses
 }: CustomizeLandingPageProps) {
   const [courseHeadline, setCourseHeadline] = useState('');
   const [valueProposition, setValueProposition] = useState('');
@@ -239,13 +241,24 @@ export default function CustomizeLandingPage({
             <img src="/CourseForgeLogo.png" alt="CourseForge" className="h-8 w-auto" />
             <span className="text-2xl font-black">COURSEFORGE</span>
           </div>
-          <button
-            onClick={onBack}
-            className="text-white hover:text-blue-200 transition-colors flex items-center gap-2"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Back to Review</span>
-          </button>
+          <div className="flex items-center gap-4">
+            {onBackToCourses && (
+              <button
+                onClick={onBackToCourses}
+                className="text-blue-100 hover:text-white transition-colors flex items-center gap-2"
+              >
+                <Home className="w-5 h-5" />
+                <span>Back to Courses</span>
+              </button>
+            )}
+            <button
+              onClick={onBack}
+              className="text-white hover:text-blue-200 transition-colors flex items-center gap-2"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>Back to Review</span>
+            </button>
+          </div>
         </div>
       </header>
 

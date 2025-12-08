@@ -71,6 +71,7 @@ function App() {
             onViewQuiz={(quizId) => {
               console.log('View quiz:', quizId);
             }}
+            onBackToCourses={() => setCurrentPage('create-course')}
           />
         ) : (
           <div>No course selected</div>

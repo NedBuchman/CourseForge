@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Copy, Mail, Share2, BarChart2, Edit, Plus, CheckCircle, Download } from 'lucide-react';
+import { Copy, Mail, Share2, BarChart2, Edit, Plus, CheckCircle, Download, Home } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { exportCourseProject } from '../lib/courseExporter';
 
@@ -18,6 +18,7 @@ interface CoursePublishedProps {
   courseId: string;
   courseContent: CourseContent;
   onCreateAnother: () => void;
+  onBackToCourses?: () => void;
 }
 
 interface Confetti {
@@ -31,7 +32,8 @@ interface Confetti {
 export default function CoursePublished({
   courseId,
   courseContent,
-  onCreateAnother
+  onCreateAnother,
+  onBackToCourses
 }: CoursePublishedProps) {
   const [confetti, setConfetti] = useState<Confetti[]>([]);
   const [copied, setCopied] = useState(false);
@@ -229,6 +231,15 @@ export default function CoursePublished({
             <img src="/CourseForgeLogo.png" alt="CourseForge" className="h-8 w-auto" />
             <span className="text-2xl font-black">COURSEFORGE</span>
           </div>
+          {onBackToCourses && (
+            <button
+              onClick={onBackToCourses}
+              className="text-blue-100 hover:text-white transition-colors flex items-center gap-2"
+            >
+              <Home className="w-5 h-5" />
+              <span>Back to Courses</span>
+            </button>
+          )}
         </div>
       </header>
 

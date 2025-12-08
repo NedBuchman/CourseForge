@@ -9,7 +9,8 @@ import {
   Target,
   AlertCircle,
   RefreshCw,
-  ChevronRight
+  ChevronRight,
+  Home
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import StatCard from '../components/StatCard';
@@ -25,6 +26,7 @@ interface CourseAnalyticsProps {
   onViewStudent: (studentId: string) => void;
   onViewLesson: (lessonIndex: number) => void;
   onViewQuiz: (quizId: string) => void;
+  onBackToCourses?: () => void;
 }
 
 interface CourseOverview {
@@ -89,7 +91,8 @@ export default function CourseAnalytics({
   onBack,
   onViewStudent,
   onViewLesson,
-  onViewQuiz
+  onViewQuiz,
+  onBackToCourses
 }: CourseAnalyticsProps) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -241,14 +244,25 @@ export default function CourseAnalytics({
                 <p className="text-blue-200 text-sm">Student Analytics Dashboard</p>
               </div>
             </div>
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-700 hover:bg-blue-600 rounded-lg transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              <span>Refresh</span>
-            </button>
+            <div className="flex items-center gap-4">
+              {onBackToCourses && (
+                <button
+                  onClick={onBackToCourses}
+                  className="text-blue-100 hover:text-white transition-colors flex items-center gap-2"
+                >
+                  <Home className="w-5 h-5" />
+                  <span>Back to Courses</span>
+                </button>
+              )}
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-700 hover:bg-blue-600 rounded-lg transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                <span>Refresh</span>
+              </button>
+            </div>
           </div>
         </div>
       </header>
