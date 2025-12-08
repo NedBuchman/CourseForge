@@ -90,6 +90,10 @@ export default function Registration({ onComplete }: RegistrationProps) {
     setError('');
 
     try {
+      if (!supabase) {
+        throw new Error('Application is not properly configured. Please contact support.');
+      }
+
       const { error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,

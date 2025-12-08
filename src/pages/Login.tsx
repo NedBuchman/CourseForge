@@ -25,6 +25,10 @@ export default function Login({ onLoginSuccess, onNavigateToRegister }: LoginPro
     setError('');
 
     try {
+      if (!supabase) {
+        throw new Error('Application is not properly configured. Please contact support.');
+      }
+
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
