@@ -97,6 +97,8 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
     contentFormat: 'text',
     videoAvatarId: 'Adrian_public_3_20240312',
     videoVoiceId: '75af67cc2ceb498681d0085bb56bddc3',
+    videoResolution: '720p',
+    heygenPlanTier: 'free',
   });
 
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -203,6 +205,8 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
       contentFormat: 'text',
       videoAvatarId: 'Adrian_public_3_20240312',
       videoVoiceId: '75af67cc2ceb498681d0085bb56bddc3',
+      videoResolution: '720p',
+      heygenPlanTier: 'free',
     });
     setUploadedFiles([]);
     setRestrictToFiles(false);
@@ -240,6 +244,8 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
         contentFormat: data.content_format || 'text',
         videoAvatarId: data.video_config?.avatar_id || 'Adrian_public_3_20240312',
         videoVoiceId: data.video_config?.voice_id || '75af67cc2ceb498681d0085bb56bddc3',
+        videoResolution: data.video_resolution || '720p',
+        heygenPlanTier: data.heygen_plan_tier || 'free',
       });
 
       setChatMessages(data.chat_history || []);
@@ -608,6 +614,8 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
           include_lesson_videos: true,
           include_quiz_explanation_videos: true
         },
+        video_resolution: formData.videoResolution,
+        heygen_plan_tier: formData.heygenPlanTier,
         video_generation_status: 'not_started',
         video_generation_progress: 0,
       };
@@ -718,7 +726,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
         try {
           const { data: courseData, error: pollError } = await supabase
             .from('courses')
-            .select('status, generation_progress, generation_stage, generated_content, generation_error, current_lesson_generating, content_format, video_generation_status, video_generation_progress, video_generation_stage, videos_generated_count, videos_total_count')
+            .select('status, generation_progress, generation_stage, generated_content, generation_error, current_lesson_generating, content_format, video_generation_status, video_generation_progress, video_generation_stage, videos_generated_count, videos_total_count, video_generation_started_at, estimated_completion_time')
             .eq('id', courseId)
             .single();
 
@@ -745,14 +753,41 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
             if (courseData.content_format === 'video' && courseData.video_generation_status === 'in_progress') {
               const videoProgress = courseData.video_generation_progress || 0;
               const videoStage = courseData.video_generation_stage || 'Generating videos...';
+
+              let timeInfo = '';
+              if (courseData.estimated_completion_time) {
+                const now = Date.now();
+                const completionTime = new Date(courseData.estimated_completion_time).getTime();
+                const minutesRemaining = Math.max(0, Math.ceil((completionTime - now) / (1000 * 60)));
+
+                if (minutesRemaining > 0) {
+                  timeInfo = ` • ~${minutesRemaining} min remaining`;
+                } else {
+                  timeInfo = ` • Completing soon...`;
+                }
+              }
+
               setGenerationProgress(Math.min(videoProgress, 99));
-              setGenerationStage(`${videoStage} (${courseData.videos_generated_count || 0}/${courseData.videos_total_count || 0} videos)`);
+              setGenerationStage(`${videoStage} (${courseData.videos_generated_count || 0}/${courseData.videos_total_count || 0} videos)${timeInfo}`);
               return false;
             }
 
             if (courseData.content_format === 'video' && courseData.video_generation_status === 'processing') {
+              let timeInfo = '';
+              if (courseData.estimated_completion_time) {
+                const now = Date.now();
+                const completionTime = new Date(courseData.estimated_completion_time).getTime();
+                const minutesRemaining = Math.max(0, Math.ceil((completionTime - now) / (1000 * 60)));
+
+                if (minutesRemaining > 0) {
+                  timeInfo = ` • ~${minutesRemaining} min remaining`;
+                } else {
+                  timeInfo = ` • Completing soon...`;
+                }
+              }
+
               setGenerationProgress(85);
-              setGenerationStage(`Videos are processing at HeyGen (${courseData.videos_generated_count || 0}/${courseData.videos_total_count || 0} completed)...`);
+              setGenerationStage(`Videos are processing at HeyGen (${courseData.videos_generated_count || 0}/${courseData.videos_total_count || 0} completed)${timeInfo}...`);
               return false;
             }
 
@@ -782,12 +817,39 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
       };
 
       let videoStatusInterval: NodeJS.Timeout | null = null;
+      let videoGenerationStartTime: Date | null = null;
+
+      const getAdaptivePollingInterval = (minutesElapsed: number): number => {
+        // Adaptive polling based on elapsed time
+        if (minutesElapsed < 2) {
+          return 60000; // 1 minute - don't poll too early
+        } else if (minutesElapsed < 8) {
+          return 30000; // 30 seconds - normal polling
+        } else if (minutesElapsed < 20) {
+          return 15000; // 15 seconds - videos should be completing
+        } else {
+          return 60000; // 1 minute - slow down if taking too long
+        }
+      };
 
       const checkVideoGenerationStatus = async () => {
         try {
           const { checkVideoStatus } = await import('../lib/edgeFunctions');
           const result = await checkVideoStatus({ courseId });
           console.log('Video status check result:', result);
+
+          // Adjust polling interval based on elapsed time
+          if (videoStatusInterval && videoGenerationStartTime) {
+            const minutesElapsed = (Date.now() - videoGenerationStartTime.getTime()) / (1000 * 60);
+            const newInterval = getAdaptivePollingInterval(minutesElapsed);
+
+            // Only restart interval if it changed significantly
+            if (videoStatusInterval && Math.abs(newInterval - 30000) > 5000) {
+              clearInterval(videoStatusInterval);
+              videoStatusInterval = setInterval(checkVideoGenerationStatus, newInterval);
+              console.log(`Adjusted video polling interval to ${newInterval}ms (${minutesElapsed.toFixed(1)} min elapsed)`);
+            }
+          }
         } catch (error) {
           console.error('Error checking video status:', error);
         }
@@ -800,14 +862,25 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
 
             const { data: currentCourse } = await supabase
               .from('courses')
-              .select('content_format, video_generation_status')
+              .select('content_format, video_generation_status, video_generation_started_at')
               .eq('id', courseId)
               .single();
 
             if (currentCourse?.content_format === 'video' &&
-                (currentCourse.video_generation_status === 'processing' || currentCourse.video_generation_status === 'in_progress') &&
-                !videoStatusInterval) {
-              videoStatusInterval = setInterval(checkVideoGenerationStatus, 30000);
+                (currentCourse.video_generation_status === 'processing' || currentCourse.video_generation_status === 'in_progress')) {
+
+              if (!videoStatusInterval) {
+                // Set initial start time
+                videoGenerationStartTime = currentCourse.video_generation_started_at
+                  ? new Date(currentCourse.video_generation_started_at)
+                  : new Date();
+
+                const minutesElapsed = (Date.now() - videoGenerationStartTime.getTime()) / (1000 * 60);
+                const initialInterval = getAdaptivePollingInterval(minutesElapsed);
+
+                videoStatusInterval = setInterval(checkVideoGenerationStatus, initialInterval);
+                console.log(`Started video polling with ${initialInterval}ms interval (${minutesElapsed.toFixed(1)} min elapsed)`);
+              }
             }
 
             if (isComplete) {
@@ -1137,6 +1210,8 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
       contentFormat: 'text',
       videoAvatarId: 'Adrian_public_3_20240312',
       videoVoiceId: '75af67cc2ceb498681d0085bb56bddc3',
+      videoResolution: '720p',
+      heygenPlanTier: 'free',
     });
     setShowQuizGeneration(false);
     setShowPresentationGeneration(false);
@@ -1759,6 +1834,46 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
                             <option value="75a5a6de69204dc9ba448158d1b6a8de">Dominic - Male</option>
                           </select>
                           <p className="text-xs text-blue-700 mt-1">Natural-sounding AI voice narration</p>
+                        </div>
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-6 mt-6">
+                        <div>
+                          <label className="block text-sm font-bold text-blue-900 mb-2">
+                            Video Resolution
+                          </label>
+                          <select
+                            value={formData.videoResolution}
+                            onChange={(e) => handleInputChange('videoResolution', e.target.value)}
+                            className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:border-blue-600 focus:outline-none bg-white"
+                          >
+                            <option value="480p">480p - Fastest (854x480)</option>
+                            <option value="540p">540p - Faster (960x540)</option>
+                            <option value="720p">720p - Balanced (1280x720) ⭐ Recommended</option>
+                            <option value="1080p">1080p - Highest Quality (1920x1080)</option>
+                          </select>
+                          <p className="text-xs text-blue-700 mt-1">
+                            Lower resolution = faster generation (~30-50% speed improvement)
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-bold text-blue-900 mb-2">
+                            HeyGen Plan Tier
+                          </label>
+                          <select
+                            value={formData.heygenPlanTier}
+                            onChange={(e) => handleInputChange('heygenPlanTier', e.target.value)}
+                            className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:border-blue-600 focus:outline-none bg-white"
+                          >
+                            <option value="free">Free (1 video at a time)</option>
+                            <option value="pro">Pro (3 videos at once)</option>
+                            <option value="scale">Scale (6 videos at once)</option>
+                            <option value="enterprise">Enterprise (20 videos at once)</option>
+                          </select>
+                          <p className="text-xs text-blue-700 mt-1">
+                            Higher tiers process videos in parallel for faster completion
+                          </p>
                         </div>
                       </div>
 

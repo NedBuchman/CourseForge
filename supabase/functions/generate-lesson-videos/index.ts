@@ -160,10 +160,39 @@ async function generateVideoScript(lesson: Lesson): Promise<{ script: string; wo
   };
 }
 
+function getResolutionDimensions(resolution: string): { width: number; height: number } {
+  switch (resolution) {
+    case '480p':
+      return { width: 854, height: 480 };
+    case '540p':
+      return { width: 960, height: 540 };
+    case '1080p':
+      return { width: 1920, height: 1080 };
+    case '720p':
+    default:
+      return { width: 1280, height: 720 };
+  }
+}
+
+function getPlanConcurrencyLimit(planTier: string): number {
+  switch (planTier) {
+    case 'enterprise':
+      return 20;
+    case 'scale':
+      return 6;
+    case 'pro':
+      return 3;
+    case 'free':
+    default:
+      return 1;
+  }
+}
+
 async function callHeyGenAPI(
   script: string,
   videoConfig: any,
-  heygenApiKey: string
+  heygenApiKey: string,
+  resolution: string = '720p'
 ): Promise<{ video_id: string; status: string }> {
   const validation = validateVideoConfig(videoConfig);
   if (!validation.valid) {
@@ -175,10 +204,12 @@ async function callHeyGenAPI(
     avatarId: videoConfig.avatar_id,
     voiceId: videoConfig.voice_id,
     scriptLength: script.length,
+    resolution,
     apiKeyConfigured: !!heygenApiKey,
     apiKeyLength: heygenApiKey?.length
   });
 
+  const dimensions = getResolutionDimensions(resolution);
   const heygenRequest = {
     video_inputs: [{
       character: {
@@ -197,10 +228,7 @@ async function callHeyGenAPI(
         value: videoConfig.background_color || '#f0f4f8'
       }
     }],
-    dimension: {
-      width: 1280,
-      height: 720
-    },
+    dimension: dimensions,
     aspect_ratio: '16:9',
     test: false
   };
@@ -301,7 +329,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: course, error: courseError } = await supabase
       .from('courses')
-      .select('id, video_config, generated_content')
+      .select('id, video_config, generated_content, heygen_plan_tier, video_resolution')
       .eq('id', courseId)
       .single();
 
@@ -399,17 +427,17 @@ Deno.serve(async (req: Request) => {
     const totalVideos = videoAssets.length;
     const failedVideos: VideoGenerationError[] = [];
 
-    console.log(`Starting video generation for ${totalVideos} assets`);
+    const planTier = course.heygen_plan_tier || 'free';
+    const resolution = course.video_resolution || '720p';
+    const concurrencyLimit = getPlanConcurrencyLimit(planTier);
 
-    for (const asset of videoAssets) {
+    console.log(`Starting parallel video generation for ${totalVideos} assets`);
+    console.log(`Plan: ${planTier}, Concurrency: ${concurrencyLimit}, Resolution: ${resolution}`);
+
+    // Process videos in parallel batches based on plan tier
+    async function submitVideoToHeyGen(asset: any): Promise<{ success: boolean; error?: string }> {
       try {
         console.log(`\n=== Processing asset ${asset.id} (Lesson ${asset.asset_reference_id}) ===`);
-        console.log('Asset details:', {
-          id: asset.id,
-          lessonNumber: asset.asset_reference_id,
-          scriptLength: asset.script_text?.length,
-          hasVideoConfig: !!asset.video_config
-        });
 
         await supabase
           .from('video_assets')
@@ -419,11 +447,11 @@ Deno.serve(async (req: Request) => {
           })
           .eq('id', asset.id);
 
-        console.log('Calling HeyGen API with validated script...');
         const heygenResult = await callHeyGenAPI(
           asset.script_text,
           asset.video_config,
-          heygenApiKey
+          heygenApiKey,
+          resolution
         );
 
         console.log(`✅ Successfully submitted video for asset ${asset.id}:`, {
@@ -449,30 +477,11 @@ Deno.serve(async (req: Request) => {
             started_at: new Date().toISOString()
           });
 
-        completedCount++;
-        const progress = 20 + Math.floor((completedCount / totalVideos) * 60);
-
-        await supabase
-          .from('courses')
-          .update({
-            video_generation_progress: progress,
-            video_generation_stage: `Submitted ${completedCount}/${totalVideos} videos to HeyGen...`,
-            videos_generated_count: completedCount
-          })
-          .eq('id', courseId);
-
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
+        return { success: true };
       } catch (videoError: any) {
         console.error(`❌ Error generating video for asset ${asset.id}:`, {
           error: videoError.message,
           stack: videoError.stack
-        });
-
-        failedVideos.push({
-          assetId: asset.id,
-          lessonNumber: asset.asset_reference_id,
-          error: videoError.message
         });
 
         await supabase
@@ -482,6 +491,49 @@ Deno.serve(async (req: Request) => {
             generation_error: videoError.message
           })
           .eq('id', asset.id);
+
+        return { success: false, error: videoError.message };
+      }
+    }
+
+    // Submit videos in batches respecting concurrency limit
+    for (let i = 0; i < videoAssets.length; i += concurrencyLimit) {
+      const batch = videoAssets.slice(i, i + concurrencyLimit);
+      console.log(`\n📦 Processing batch ${Math.floor(i / concurrencyLimit) + 1}: ${batch.length} videos`);
+
+      const batchResults = await Promise.all(
+        batch.map(asset => submitVideoToHeyGen(asset))
+      );
+
+      // Update counts
+      for (let j = 0; j < batchResults.length; j++) {
+        const result = batchResults[j];
+        const asset = batch[j];
+
+        if (result.success) {
+          completedCount++;
+        } else {
+          failedVideos.push({
+            assetId: asset.id,
+            lessonNumber: asset.asset_reference_id,
+            error: result.error || 'Unknown error'
+          });
+        }
+      }
+
+      const progress = 20 + Math.floor((completedCount / totalVideos) * 60);
+      await supabase
+        .from('courses')
+        .update({
+          video_generation_progress: progress,
+          video_generation_stage: `Submitted ${completedCount}/${totalVideos} videos to HeyGen...`,
+          videos_generated_count: completedCount
+        })
+        .eq('id', courseId);
+
+      // Small delay between batches to avoid overwhelming the API
+      if (i + concurrencyLimit < videoAssets.length) {
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
 
@@ -490,8 +542,15 @@ Deno.serve(async (req: Request) => {
 
     const finalStatus = completedCount > 0 ? 'processing' : 'failed';
     const finalProgress = completedCount > 0 ? 85 : 0;
+
+    // Calculate estimated completion time (10 minutes per video, but consider parallel processing)
+    const estimatedMinutesPerVideo = 10;
+    const batchesNeeded = Math.ceil(completedCount / concurrencyLimit);
+    const estimatedTotalMinutes = batchesNeeded * estimatedMinutesPerVideo;
+    const estimatedCompletionTime = new Date(Date.now() + estimatedTotalMinutes * 60 * 1000);
+
     const finalStage = completedCount > 0
-      ? `Videos are processing at HeyGen (2-5 minutes)... ${completedCount}/${totalVideos} submitted`
+      ? `Processing ${completedCount} videos at HeyGen (~${estimatedTotalMinutes} min est.)... ${completedCount}/${totalVideos} submitted`
       : `All video submissions failed`;
 
     await supabase
@@ -500,6 +559,7 @@ Deno.serve(async (req: Request) => {
         video_generation_progress: finalProgress,
         video_generation_stage: finalStage,
         video_generation_status: finalStatus,
+        estimated_completion_time: completedCount > 0 ? estimatedCompletionTime.toISOString() : null,
         video_generation_error: failedVideos.length > 0 ? `${failedVideos.length} videos failed: ${failedVideos.map(f => `Lesson ${f.lessonNumber}: ${f.error}`).join('; ')}` : null
       })
       .eq('id', courseId);
