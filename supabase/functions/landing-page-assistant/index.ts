@@ -21,14 +21,14 @@ const FIELD_ROLES: Record<string, string> = {
   "Course Headline": "expert marketing copywriter specializing in course headlines",
   "Value Proposition": "conversion strategist specializing in value propositions",
   "Who Is This Course For?": "customer persona expert",
-  "Key Course Benefits": "learning outcomes specialist",
+  "Key Course Benefits": "learning outcomes specialist who creates concise, structured benefit statements with titles and descriptions",
   "Instructor Information": "professional bio writer",
   "Enrollment Button Text": "call-to-action specialist",
 };
 
 function generateSystemPrompt(fieldName: string): string {
   const role = FIELD_ROLES[fieldName] || "helpful writing assistant";
-  return `You are a ${role}. Your goal is to help course creators write compelling, clear, and professional content for their landing pages.
+  let basePrompt = `You are a ${role}. Your goal is to help course creators write compelling, clear, and professional content for their landing pages.
 
 Guidelines:
 - Be clear, friendly, and non-jargony
@@ -36,6 +36,20 @@ Guidelines:
 - Write for course creators and educators
 - Avoid robotic or overly formal tone
 - Keep it concise and actionable`;
+
+  if (fieldName === "Key Course Benefits") {
+    basePrompt += `
+
+SPECIAL INSTRUCTIONS FOR COURSE BENEFITS:
+- Each benefit consists of TWO required parts: Title (max 40 chars) and Description (max 80 chars)
+- ALWAYS format as: "Title - Description"
+- The Title should be a short, catchy phrase that grabs attention
+- The Description should explain the specific outcome or value
+- Stay strictly within the character limits for both parts
+- Generate 2-4 benefits per request`;
+  }
+
+  return basePrompt;
 }
 
 function generateAutoPrompt(body: RequestBody): string {
@@ -52,6 +66,22 @@ function generateAutoPrompt(body: RequestBody): string {
   } else if (fieldName === "Who Is This Course For?") {
     const topic = courseTopic || "this course";
     prompt = `Describe 3 different ideal student personas for a course about ${topic}. Help potential students self-identify if this course is right for them.`;
+  } else if (fieldName === "Key Course Benefits") {
+    const topic = courseTopic || "this course";
+    prompt = `Generate 2-4 compelling course benefits for ${topic}.
+
+CRITICAL FORMAT REQUIREMENTS:
+- Each benefit MUST have TWO parts: a Title and a Description
+- Title: Maximum 40 characters - should be punchy, action-oriented, and catchy
+- Description: Maximum 80 characters - should explain the tangible outcome or transformation
+- Format each benefit as: "Title - Description"
+
+Example format:
+Master Core Concepts - Learn fundamental principles and industry terminology
+Practical Hands-On Skills - Apply knowledge through real-world exercises
+Build a Portfolio - Create projects you can showcase to employers
+
+Focus on tangible outcomes, skills gained, or transformations students will experience. Keep both parts within their character limits.`;
   } else {
     prompt = `Help me write compelling content for the "${fieldName}" field on my course landing page.`;
     if (fieldDescription) {

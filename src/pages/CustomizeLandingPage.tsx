@@ -516,7 +516,7 @@ export default function CustomizeLandingPage({
                   Key Course Benefits
                 </label>
                 <p className="text-slate-600 mb-1 text-sm">
-                  Highlight 2-4 key benefits or learning outcomes. What will students gain? These appear prominently on your landing page.
+                  Highlight 2-4 key benefits or learning outcomes. Each benefit needs a Title (max 40 characters) and a Description (max 80 characters). These appear prominently on your landing page.
                 </p>
                 <AIFieldTrigger onClick={() => handleOpenAIPanel('Key Course Benefits')} />
                 <div className={`space-y-4 mt-3 p-4 rounded-xl transition-all ${
@@ -526,82 +526,106 @@ export default function CustomizeLandingPage({
                 }`}>
                   <div className="border-2 border-slate-200 rounded-xl p-4 bg-slate-50">
                     <label className="block text-sm font-semibold text-slate-700 mb-2">Benefit 1</label>
-                    <input
-                      type="text"
-                      value={benefit1Title}
-                      onChange={(e) => setBenefit1Title(e.target.value)}
-                      maxLength={40}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-600 focus:outline-none bg-white mb-2"
-                      placeholder="e.g., Master Core Concepts"
-                    />
-                    <input
-                      type="text"
-                      value={benefit1Description}
-                      onChange={(e) => setBenefit1Description(e.target.value)}
-                      maxLength={80}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-600 focus:outline-none bg-white"
-                      placeholder="e.g., Learn fundamental principles and terminology"
-                    />
+                    <div className="mb-2">
+                      <input
+                        type="text"
+                        value={benefit1Title}
+                        onChange={(e) => setBenefit1Title(e.target.value)}
+                        maxLength={40}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-600 focus:outline-none bg-white"
+                        placeholder="Title (max 40 chars) - e.g., Master Core Concepts"
+                      />
+                      <div className="text-right text-xs text-slate-500 mt-1">{benefit1Title.length}/40</div>
+                    </div>
+                    <div>
+                      <input
+                        type="text"
+                        value={benefit1Description}
+                        onChange={(e) => setBenefit1Description(e.target.value)}
+                        maxLength={80}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-600 focus:outline-none bg-white"
+                        placeholder="Description (max 80 chars) - e.g., Learn fundamental principles and terminology"
+                      />
+                      <div className="text-right text-xs text-slate-500 mt-1">{benefit1Description.length}/80</div>
+                    </div>
                   </div>
 
                   <div className="border-2 border-slate-200 rounded-xl p-4 bg-slate-50">
                     <label className="block text-sm font-semibold text-slate-700 mb-2">Benefit 2</label>
-                    <input
-                      type="text"
-                      value={benefit2Title}
-                      onChange={(e) => setBenefit2Title(e.target.value)}
-                      maxLength={40}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-600 focus:outline-none bg-white mb-2"
-                      placeholder="e.g., Practical Skills"
-                    />
-                    <input
-                      type="text"
-                      value={benefit2Description}
-                      onChange={(e) => setBenefit2Description(e.target.value)}
-                      maxLength={80}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-600 focus:outline-none bg-white"
-                      placeholder="e.g., Apply knowledge with hands-on exercises"
-                    />
+                    <div className="mb-2">
+                      <input
+                        type="text"
+                        value={benefit2Title}
+                        onChange={(e) => setBenefit2Title(e.target.value)}
+                        maxLength={40}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-600 focus:outline-none bg-white"
+                        placeholder="Title (max 40 chars) - e.g., Practical Skills"
+                      />
+                      <div className="text-right text-xs text-slate-500 mt-1">{benefit2Title.length}/40</div>
+                    </div>
+                    <div>
+                      <input
+                        type="text"
+                        value={benefit2Description}
+                        onChange={(e) => setBenefit2Description(e.target.value)}
+                        maxLength={80}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-600 focus:outline-none bg-white"
+                        placeholder="Description (max 80 chars) - e.g., Apply knowledge with hands-on exercises"
+                      />
+                      <div className="text-right text-xs text-slate-500 mt-1">{benefit2Description.length}/80</div>
+                    </div>
                   </div>
 
                   <div className="border-2 border-slate-200 rounded-xl p-4 bg-slate-50">
                     <label className="block text-sm font-semibold text-slate-700 mb-2">Benefit 3 (Optional)</label>
-                    <input
-                      type="text"
-                      value={benefit3Title}
-                      onChange={(e) => setBenefit3Title(e.target.value)}
-                      maxLength={40}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-600 focus:outline-none bg-white mb-2"
-                      placeholder="e.g., Real Results"
-                    />
-                    <input
-                      type="text"
-                      value={benefit3Description}
-                      onChange={(e) => setBenefit3Description(e.target.value)}
-                      maxLength={80}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-600 focus:outline-none bg-white"
-                      placeholder="e.g., Create projects you can use immediately"
-                    />
+                    <div className="mb-2">
+                      <input
+                        type="text"
+                        value={benefit3Title}
+                        onChange={(e) => setBenefit3Title(e.target.value)}
+                        maxLength={40}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-600 focus:outline-none bg-white"
+                        placeholder="Title (max 40 chars) - e.g., Real Results"
+                      />
+                      <div className="text-right text-xs text-slate-500 mt-1">{benefit3Title.length}/40</div>
+                    </div>
+                    <div>
+                      <input
+                        type="text"
+                        value={benefit3Description}
+                        onChange={(e) => setBenefit3Description(e.target.value)}
+                        maxLength={80}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-600 focus:outline-none bg-white"
+                        placeholder="Description (max 80 chars) - e.g., Create projects you can use immediately"
+                      />
+                      <div className="text-right text-xs text-slate-500 mt-1">{benefit3Description.length}/80</div>
+                    </div>
                   </div>
 
                   <div className="border-2 border-slate-200 rounded-xl p-4 bg-slate-50">
                     <label className="block text-sm font-semibold text-slate-700 mb-2">Benefit 4 (Optional)</label>
-                    <input
-                      type="text"
-                      value={benefit4Title}
-                      onChange={(e) => setBenefit4Title(e.target.value)}
-                      maxLength={40}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-600 focus:outline-none bg-white mb-2"
-                      placeholder="e.g., Expert Insights"
-                    />
-                    <input
-                      type="text"
-                      value={benefit4Description}
-                      onChange={(e) => setBenefit4Description(e.target.value)}
-                      maxLength={80}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-600 focus:outline-none bg-white"
-                      placeholder="e.g., Learn best practices from professionals"
-                    />
+                    <div className="mb-2">
+                      <input
+                        type="text"
+                        value={benefit4Title}
+                        onChange={(e) => setBenefit4Title(e.target.value)}
+                        maxLength={40}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-600 focus:outline-none bg-white"
+                        placeholder="Title (max 40 chars) - e.g., Expert Insights"
+                      />
+                      <div className="text-right text-xs text-slate-500 mt-1">{benefit4Title.length}/40</div>
+                    </div>
+                    <div>
+                      <input
+                        type="text"
+                        value={benefit4Description}
+                        onChange={(e) => setBenefit4Description(e.target.value)}
+                        maxLength={80}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-600 focus:outline-none bg-white"
+                        placeholder="Description (max 80 chars) - e.g., Learn best practices from professionals"
+                      />
+                      <div className="text-right text-xs text-slate-500 mt-1">{benefit4Description.length}/80</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -901,7 +925,7 @@ export default function CustomizeLandingPage({
             : aiActiveField === 'Who Is This Course For?'
             ? "Describe your ideal student. Help visitors self-identify if this course is right for them."
             : aiActiveField === 'Key Course Benefits'
-            ? `Generate compelling course benefits for: ${courseTopicForAI}. Create 2-4 benefit items, each with a short catchy title (max 40 chars) and a clear description (max 80 chars). Focus on tangible outcomes, skills gained, or transformations students will experience. Format as: "Title - Description" for each benefit.`
+            ? `Generate 2-4 compelling course benefits for: ${courseTopicForAI}. Each benefit MUST have TWO parts:\n\n1. Title (max 40 characters) - A short, catchy phrase\n2. Description (max 80 characters) - Explains the specific outcome\n\nFormat each benefit as: "Title - Description"\n\nExample: "Master Core Concepts - Learn fundamental principles and industry terminology"\n\nFocus on tangible outcomes, skills gained, or transformations students will experience.`
             : ''
         }
         currentValue={
