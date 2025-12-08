@@ -277,9 +277,20 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
 
     const currentStep = selectedCourse.current_step;
 
-    if (currentStep === 1) {
-      setShowResults(true);
-      setIsViewMode(false);
+    if (currentStep === 0 || currentStep === 1) {
+      if (courseContent && courseContent.lessons) {
+        setShowResults(true);
+        setIsViewMode(false);
+      } else {
+        setShowNewCourseForm(true);
+        setIsViewMode(false);
+        setStatusBanner({
+          type: 'info',
+          message: selectedCourse.status === 'failed'
+            ? 'This course generation failed previously. Review your settings and try generating again.'
+            : 'Complete the form below to generate your course content.'
+        });
+      }
     } else if (currentStep === 2) {
       setShowQuizGeneration(true);
     } else if (currentStep === 3) {
@@ -524,6 +535,30 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
         const totalWords = uploadedFileContents.reduce((sum, content) =>
           sum + content.split(/\s+/).length, 0
         );
+
+        const estimatedTokens = Math.ceil(totalWords * 1.33);
+        const MAX_CONTENT_TOKENS = 100000;
+
+        if (estimatedTokens > MAX_CONTENT_TOKENS) {
+          const maxWords = Math.floor(MAX_CONTENT_TOKENS / 1.33);
+          console.warn(`Document too large: ${estimatedTokens.toLocaleString()} tokens (${totalWords.toLocaleString()} words). Truncating to ${maxWords.toLocaleString()} words.`);
+
+          const truncationRatio = maxWords / totalWords;
+          for (let i = 0; i < uploadedFileContents.length; i++) {
+            const content = uploadedFileContents[i];
+            const words = content.split(/\s+/);
+            const targetWords = Math.floor(words.length * truncationRatio);
+            uploadedFileContents[i] = words.slice(0, targetWords).join(' ');
+          }
+
+          setStatusBanner({
+            type: 'info',
+            message: `Your uploaded document(s) were very large (${totalWords.toLocaleString()} words). The content has been automatically truncated to ${maxWords.toLocaleString()} words to fit within AI processing limits. For best results, consider uploading smaller, more focused documents.`
+          });
+
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+
         console.log(`Successfully loaded ${uploadedFileContents.length} file(s) with ${totalWords.toLocaleString()} words`);
         setGenerationStage(`Loaded ${uploadedFileContents.length} file(s) (${totalWords.toLocaleString()} words)`);
         await new Promise(resolve => setTimeout(resolve, 1000));
