@@ -71,14 +71,14 @@ export default function CustomizeLandingPage({
           .maybeSingle(),
         supabase
           .from('courses')
-          .select('subject, audience, difficulty, objectives')
+          .select('topic, target_audience, difficulty_level, learning_objectives, title')
           .eq('id', courseId)
           .single()
       ]);
 
       if (courseResult.data) {
-        const { subject, audience, difficulty, objectives } = courseResult.data;
-        const courseContext = `${subject} (${difficulty} level for ${audience})${objectives ? '. Objectives: ' + objectives : ''}`;
+        const { topic, target_audience, difficulty_level, learning_objectives, title } = courseResult.data;
+        const courseContext = `${topic || title} (${difficulty_level} level for ${target_audience})${learning_objectives ? '. Objectives: ' + learning_objectives : ''}`;
         setCourseTopicForAI(courseContext);
       }
 

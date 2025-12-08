@@ -77,11 +77,17 @@ Deno.serve(async (req: Request) => {
     const body: RequestBody = await req.json();
     const { fieldName, action = "generate", customPrompt, courseTopic } = body;
 
-    console.log("Landing page assistant request:", { fieldName, action, hasCourseTopic: !!courseTopic });
+    console.log("Landing page assistant request:", {
+      fieldName,
+      action,
+      hasCourseTopic: !!courseTopic,
+      hasApiKey: !!ANTHROPIC_API_KEY,
+      apiKeyLength: ANTHROPIC_API_KEY?.length || 0
+    });
 
     if (!ANTHROPIC_API_KEY) {
       console.error("ANTHROPIC_API_KEY not configured in environment");
-      throw new Error("AI service not configured. Please contact support.");
+      throw new Error("ANTHROPIC_API_KEY environment variable is not set. Please configure it in your Supabase project settings under Edge Functions secrets.");
     }
 
     if (!fieldName) {
