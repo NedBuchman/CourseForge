@@ -2,6 +2,15 @@ CourseForge
 
 ## CRITICAL: Before Deploying
 
+### For bolt.host Users
+**YOU'RE ALL SET!** Environment variables are pre-configured in:
+- `bolt.toml` (main app)
+- `student/bolt.toml` (student portal)
+- `manager/bolt.toml` (manager dashboard)
+
+See [BOLT_HOST_DEPLOYMENT.md](./BOLT_HOST_DEPLOYMENT.md) for bolt.host-specific deployment instructions.
+
+### For Other Hosting Platforms (Netlify, Vercel, etc.)
 **READ THIS FIRST:** [CRITICAL_DEPLOYMENT_SETUP.md](./CRITICAL_DEPLOYMENT_SETUP.md)
 
 Your app will show a "Configuration Error" and not start if you don't set environment variables in your hosting platform BEFORE deployment. The `.env` file is excluded from git for security.
