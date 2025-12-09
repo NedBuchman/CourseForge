@@ -19,6 +19,7 @@ export interface StudentAuthResponse {
 export const studentAuth = {
   async register(email: string, password: string, firstName: string, lastName: string): Promise<StudentAuthResponse> {
     try {
+      console.log('Attempting registration for:', email);
       const response = await fetch(`${SUPABASE_URL}/functions/v1/student-auth?action=register`, {
         method: 'POST',
         headers: {
@@ -32,7 +33,23 @@ export const studentAuth = {
         }),
       });
 
-      const data = await response.json();
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+      const responseText = await response.text();
+      console.log('Response text:', responseText);
+
+      if (!responseText) {
+        return { success: false, error: 'Server returned empty response. Please try again.' };
+      }
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error('JSON parse error:', e);
+        return { success: false, error: 'Invalid server response. Please try again.' };
+      }
 
       if (!response.ok || !data.success) {
         return { success: false, error: data.error || 'Registration failed' };
@@ -57,6 +74,7 @@ export const studentAuth = {
 
   async login(email: string, password: string): Promise<StudentAuthResponse> {
     try {
+      console.log('Attempting login for:', email);
       const response = await fetch(`${SUPABASE_URL}/functions/v1/student-auth?action=login`, {
         method: 'POST',
         headers: {
@@ -68,7 +86,22 @@ export const studentAuth = {
         }),
       });
 
-      const data = await response.json();
+      console.log('Response status:', response.status);
+
+      const responseText = await response.text();
+      console.log('Response text:', responseText);
+
+      if (!responseText) {
+        return { success: false, error: 'Server returned empty response. Please try again.' };
+      }
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error('JSON parse error:', e);
+        return { success: false, error: 'Invalid server response. Please try again.' };
+      }
 
       if (!response.ok || !data.success) {
         return { success: false, error: data.error || 'Invalid email or password' };
