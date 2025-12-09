@@ -79,9 +79,10 @@ Deno.serve(async (req: Request) => {
 
     const { data: processingAssets, error: assetsError } = await supabase
       .from('video_assets')
-      .select('id, provider_video_id, asset_type, asset_reference_id')
+      .select('id, provider_video_id, asset_type, asset_reference_id, generation_status, video_url')
       .eq('course_id', courseId)
-      .eq('generation_status', 'processing');
+      .or('generation_status.eq.processing,video_url.is.null')
+      .not('generation_status', 'eq', 'failed');
 
     if (assetsError) {
       throw assetsError;
@@ -147,7 +148,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log(`Checking status for ${processingAssets.length} processing videos`);
+    console.log(`Checking status for ${processingAssets.length} videos needing sync`);
 
     let updatedCount = 0;
     let completedCount = 0;
@@ -155,16 +156,18 @@ Deno.serve(async (req: Request) => {
 
     for (const asset of processingAssets) {
       if (!asset.provider_video_id) {
-        console.warn(`Asset ${asset.id} has no provider_video_id`);
+        console.warn(`Asset ${asset.id} has no provider_video_id, skipping`);
         continue;
       }
+
+      console.log(`Checking HeyGen status for asset ${asset.id} (current status: ${asset.generation_status})`);
 
       const statusResult = await checkHeyGenVideoStatus(
         asset.provider_video_id,
         heygenApiKey
       );
 
-      console.log(`Asset ${asset.id} status:`, statusResult.status);
+      console.log(`Asset ${asset.id} HeyGen response:`, statusResult.status);
 
       if (statusResult.status === 'completed' && statusResult.video_url) {
         await supabase
@@ -210,6 +213,23 @@ Deno.serve(async (req: Request) => {
 
         updatedCount++;
         failedCount++;
+      } else if (statusResult.status === 'processing' && asset.generation_status !== 'processing') {
+        console.log(`Asset ${asset.id} is processing at HeyGen, updating status in database`);
+        await supabase
+          .from('video_assets')
+          .update({
+            generation_status: 'processing'
+          })
+          .eq('id', asset.id);
+
+        await supabase
+          .from('video_generation_queue')
+          .update({
+            status: 'processing'
+          })
+          .eq('video_asset_id', asset.id);
+
+        updatedCount++;
       }
 
       await new Promise(resolve => setTimeout(resolve, 500));
