@@ -1350,13 +1350,15 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
 
   const handleLandingPageReviewComplete = async () => {
     if (currentCourseId) {
+      const hasVideoFormat = selectedCourse?.content_format === 'video' || selectedCourse?.content_format === 'hybrid';
+
       await supabase
         .from('courses')
         .update({
           landing_page_status: 'configured',
           landing_page_accepted_at: new Date().toISOString(),
-          current_step: 5,
-          last_completed_step: 4,
+          current_step: hasVideoFormat ? 6 : 5,
+          last_completed_step: hasVideoFormat ? 5 : 4,
         })
         .eq('id', currentCourseId);
 
@@ -1364,7 +1366,13 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
     }
 
     setShowLandingPageReview(false);
-    setShowCoursePublished(true);
+
+    const hasVideoFormat = selectedCourse?.content_format === 'video' || selectedCourse?.content_format === 'hybrid';
+    if (hasVideoFormat) {
+      setShowVideoReview(true);
+    } else {
+      setShowCoursePublished(true);
+    }
   };
 
   const handleCreateAnotherCourse = () => {

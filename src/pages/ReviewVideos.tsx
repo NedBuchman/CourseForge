@@ -103,8 +103,9 @@ const ReviewVideos: React.FC<ReviewVideosProps> = ({ courseId, onComplete, onBac
         .eq('generation_status', 'processing');
 
       const hasProcessingVideos = quickCheck && quickCheck.length > 0;
+      const isFirstLoad = !showRefreshIndicator && loading;
 
-      if (hasProcessingVideos || showRefreshIndicator) {
+      if (hasProcessingVideos || showRefreshIndicator || isFirstLoad) {
         try {
           await checkVideoStatus({ courseId });
         } catch (statusError) {
