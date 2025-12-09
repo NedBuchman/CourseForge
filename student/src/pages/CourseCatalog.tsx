@@ -63,11 +63,19 @@ export default function CourseCatalog({ onNavigate, onLogout }: CourseCatalogPro
         enrollmentsResponse.data?.map(e => e.course_id) || []
       );
 
-      const coursesWithEnrollment = coursesResponse.data?.map(course => ({
-        ...course,
-        lessons: course.lessons || [],
-        isEnrolled: enrolledCourseIds.has(course.id),
-      })) || [];
+      const coursesWithEnrollment = (coursesResponse.data || [])
+        .filter(course => {
+          if (!course.lessons || !Array.isArray(course.lessons) || course.lessons.length === 0) {
+            console.warn(`Course ${course.id} (${course.title}) has no valid lessons, filtering out`);
+            return false;
+          }
+          return true;
+        })
+        .map(course => ({
+          ...course,
+          lessons: course.lessons || [],
+          isEnrolled: enrolledCourseIds.has(course.id),
+        }));
 
       setCourses(coursesWithEnrollment);
     } catch (error: any) {

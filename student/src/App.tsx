@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { studentAuth } from './lib/studentAuth';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegistrationPage from './pages/RegistrationPage';
@@ -51,10 +52,16 @@ function App() {
     case 'dashboard':
       return <Dashboard onNavigate={navigateTo} onLogout={handleLogout} />;
     case 'catalog':
-      return <CourseCatalog onNavigate={navigateTo} onLogout={handleLogout} />;
+      return (
+        <ErrorBoundary>
+          <CourseCatalog onNavigate={navigateTo} onLogout={handleLogout} />
+        </ErrorBoundary>
+      );
     case 'course':
       return appState.selectedCourseId ? (
-        <CoursePlayer courseId={appState.selectedCourseId} onNavigate={navigateTo} onLogout={handleLogout} />
+        <ErrorBoundary>
+          <CoursePlayer courseId={appState.selectedCourseId} onNavigate={navigateTo} onLogout={handleLogout} />
+        </ErrorBoundary>
       ) : (
         <Dashboard onNavigate={navigateTo} onLogout={handleLogout} />
       );

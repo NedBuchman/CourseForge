@@ -43,21 +43,40 @@ export default function CoursePlayer({ courseId, onNavigate, onLogout }: CourseP
           .from('courses')
           .select('id, title, description, lessons')
           .eq('id', courseId)
-          .single(),
+          .maybeSingle(),
         supabase
           .from('student_course_enrollments')
           .select('progress')
           .eq('student_id', session.student_id)
           .eq('course_id', courseId)
-          .single()
+          .maybeSingle()
       ]);
 
       if (courseResponse.error) throw courseResponse.error;
 
-      setCourse(courseResponse.data);
+      if (!courseResponse.data) {
+        console.error('Course not found');
+        setCourse(null);
+        setLoading(false);
+        return;
+      }
+
+      const courseData = courseResponse.data;
+
+      if (!courseData.lessons || !Array.isArray(courseData.lessons) || courseData.lessons.length === 0) {
+        console.error('Course has no lessons');
+        setCourse(null);
+        setLoading(false);
+        return;
+      }
+
+      setCourse({
+        ...courseData,
+        lessons: courseData.lessons
+      });
 
       if (enrollmentResponse.data?.progress) {
-        const completed = new Set(enrollmentResponse.data.progress.completed_lessons || []);
+        const completed = new Set<number>(enrollmentResponse.data.progress.completed_lessons || []);
         setCompletedLessons(completed);
 
         if (enrollmentResponse.data.progress.last_accessed_lesson !== null) {
@@ -66,6 +85,7 @@ export default function CoursePlayer({ courseId, onNavigate, onLogout }: CourseP
       }
     } catch (error) {
       console.error('Error loading course:', error);
+      setCourse(null);
     } finally {
       setLoading(false);
     }
@@ -130,11 +150,19 @@ export default function CoursePlayer({ courseId, onNavigate, onLogout }: CourseP
   if (!course) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600">Course not found</p>
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6 mb-4">
+            <svg className="h-12 w-12 text-yellow-600 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Course Not Available</h3>
+            <p className="text-gray-600 text-sm">
+              This course could not be loaded. It may be incomplete or not yet published.
+            </p>
+          </div>
           <button
             onClick={() => onNavigate('dashboard')}
-            className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
           >
             Back to Dashboard
           </button>
