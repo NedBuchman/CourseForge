@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import CourseResults, { IssueState } from '../components/CourseResults';
 import ConfirmationModal from '../components/ConfirmationModal';
 import Toast from '../components/Toast';
+import ReviewLessonContent from './ReviewLessonContent';
 import GenerateQuizzes from './GenerateQuizzes';
 import GeneratePresentation from './GeneratePresentation';
 import ReviewPresentation from './ReviewPresentation';
@@ -78,6 +79,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
   const [verificationResults, setVerificationResults] = useState<VerificationResults | undefined>(undefined);
   const [isViewMode, setIsViewMode] = useState(false);
   const [statusBanner, setStatusBanner] = useState<{ type: 'info' | 'error'; message: string } | null>(null);
+  const [showLessonContentReview, setShowLessonContentReview] = useState(false);
   const [showQuizGeneration, setShowQuizGeneration] = useState(false);
   const [showVideoReview, setShowVideoReview] = useState(false);
   const [showPresentationGeneration, setShowPresentationGeneration] = useState(false);
@@ -123,7 +125,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
 
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [showResults, showVideoReview, showQuizGeneration, showPresentationGeneration, showPresentationReview, showLandingPageCustomization, showLandingPageReview, showCoursePublished, showNewCourseForm]);
+  }, [showResults, showLessonContentReview, showVideoReview, showQuizGeneration, showPresentationGeneration, showPresentationReview, showLandingPageCustomization, showLandingPageReview, showCoursePublished, showNewCourseForm]);
 
   const checkConfiguration = async () => {
     try {
@@ -302,17 +304,23 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
             : 'Complete the form below to generate your course content.'
         });
       }
-    } else if (hasVideoFormat && currentStep === 2) {
-      setShowVideoReview(true);
-    } else if ((hasVideoFormat && currentStep === 3) || (!hasVideoFormat && currentStep === 2)) {
+    } else if (currentStep === 2) {
+      setShowLessonContentReview(true);
+    } else if (currentStep === 3) {
       setShowQuizGeneration(true);
-    } else if ((hasVideoFormat && currentStep === 4) || (!hasVideoFormat && currentStep === 3)) {
+    } else if (currentStep === 4) {
       setShowPresentationGeneration(true);
-    } else if ((hasVideoFormat && currentStep === 5) || (!hasVideoFormat && currentStep === 4)) {
+    } else if (currentStep === 5) {
       setShowLandingPageCustomization(true);
-    } else if ((hasVideoFormat && currentStep === 6) || (!hasVideoFormat && currentStep === 5)) {
-      setShowLandingPageReview(true);
+    } else if (currentStep === 6) {
+      if (hasVideoFormat) {
+        setShowVideoReview(true);
+      } else {
+        setShowLandingPageReview(true);
+      }
     } else if ((hasVideoFormat && currentStep === 7) || (!hasVideoFormat && currentStep === 6)) {
+      setShowLandingPageReview(true);
+    } else if ((hasVideoFormat && currentStep === 8) || (!hasVideoFormat && currentStep === 7)) {
       setShowCoursePublished(true);
     }
   };
@@ -327,17 +335,23 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
     if (step === 1) {
       setShowResults(true);
       setIsViewMode(true);
-    } else if (hasVideoFormat && step === 2) {
-      setShowVideoReview(true);
-    } else if ((hasVideoFormat && step === 3) || (!hasVideoFormat && step === 2)) {
+    } else if (step === 2) {
+      setShowLessonContentReview(true);
+    } else if (step === 3) {
       setShowQuizGeneration(true);
-    } else if ((hasVideoFormat && step === 4) || (!hasVideoFormat && step === 3)) {
+    } else if (step === 4) {
       setShowPresentationGeneration(true);
-    } else if ((hasVideoFormat && step === 5) || (!hasVideoFormat && step === 4)) {
+    } else if (step === 5) {
       setShowLandingPageCustomization(true);
-    } else if ((hasVideoFormat && step === 6) || (!hasVideoFormat && step === 5)) {
-      setShowLandingPageReview(true);
+    } else if (step === 6) {
+      if (hasVideoFormat) {
+        setShowVideoReview(true);
+      } else {
+        setShowLandingPageReview(true);
+      }
     } else if ((hasVideoFormat && step === 7) || (!hasVideoFormat && step === 6)) {
+      setShowLandingPageReview(true);
+    } else if ((hasVideoFormat && step === 8) || (!hasVideoFormat && step === 7)) {
       setShowCoursePublished(true);
     }
   };
@@ -1230,17 +1244,26 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
       }
     }
 
-    const hasVideoFormat = selectedCourse?.content_format === 'video' || selectedCourse?.content_format === 'hybrid';
-    if (hasVideoFormat) {
-      setShowVideoReview(true);
-    } else {
-      setShowQuizGeneration(true);
+    setShowLessonContentReview(true);
+  };
+
+  const handleBackFromLessonContentReview = () => {
+    setShowLessonContentReview(false);
+    setShowResults(true);
+  };
+
+  const handleLessonContentReviewComplete = async () => {
+    if (currentCourseId) {
+      await fetchUserCourses();
     }
+
+    setShowLessonContentReview(false);
+    setShowQuizGeneration(true);
   };
 
   const handleBackFromVideoReview = () => {
     setShowVideoReview(false);
-    setShowResults(true);
+    setShowLandingPageCustomization(true);
   };
 
   const handleVideoReviewComplete = async () => {
@@ -1250,8 +1273,8 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
         .from('courses')
         .update({
           videos_status: 'approved',
-          current_step: hasVideoFormat ? 3 : 2,
-          last_completed_step: hasVideoFormat ? 2 : 1,
+          current_step: hasVideoFormat ? 7 : 6,
+          last_completed_step: hasVideoFormat ? 6 : 5,
         })
         .eq('id', currentCourseId);
 
@@ -1259,17 +1282,12 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
     }
 
     setShowVideoReview(false);
-    setShowQuizGeneration(true);
+    setShowLandingPageReview(true);
   };
 
   const handleBackFromQuizGeneration = () => {
-    const hasVideoFormat = selectedCourse?.content_format === 'video' || selectedCourse?.content_format === 'hybrid';
     setShowQuizGeneration(false);
-    if (hasVideoFormat) {
-      setShowVideoReview(true);
-    } else {
-      setShowResults(true);
-    }
+    setShowLessonContentReview(true);
   };
 
   const handleQuizGenerationComplete = () => {
@@ -1543,6 +1561,18 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
         courseContent={courseContent}
         onBack={handleBackFromPresentationGeneration}
         onComplete={handlePresentationGenerationComplete}
+        onBackToCourses={handleBackToCourseList}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
+  if (showLessonContentReview && currentCourseId) {
+    return (
+      <ReviewLessonContent
+        courseId={currentCourseId}
+        onComplete={handleLessonContentReviewComplete}
+        onBack={handleBackFromLessonContentReview}
         onBackToCourses={handleBackToCourseList}
         onLogout={handleLogout}
       />

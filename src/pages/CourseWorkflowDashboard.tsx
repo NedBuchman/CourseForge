@@ -72,60 +72,68 @@ export default function CourseWorkflowDashboard({
       icon: Brain,
       status: getStepStatus(1, contentStatus),
       canEdit: lastCompletedStep >= 1
+    },
+    {
+      number: 2,
+      title: 'Review Lesson Content',
+      description: hasVideoFormat ? 'Review and approve lesson content (optimized for video)' : 'Review and approve lesson content',
+      icon: Edit,
+      status: getStepStatus(2, contentStatus === 'completed' && lastCompletedStep >= 2 ? 'completed' : contentStatus),
+      canEdit: lastCompletedStep >= 2
+    },
+    {
+      number: 3,
+      title: 'Quiz Generation',
+      description: 'Create assessments for each lesson',
+      icon: FileText,
+      status: getStepStatus(3, quizzesStatus),
+      canEdit: lastCompletedStep >= 3
+    },
+    {
+      number: 4,
+      title: 'Presentation Setup',
+      description: 'Configure presentation theme and settings',
+      icon: Presentation,
+      status: getStepStatus(4, presentationStatus),
+      canEdit: lastCompletedStep >= 4
+    },
+    {
+      number: 5,
+      title: 'Landing Page',
+      description: 'Customize your course marketing page',
+      icon: Globe,
+      status: getStepStatus(5, landingPageStatus),
+      canEdit: lastCompletedStep >= 5
     }
   ];
 
   if (hasVideoFormat) {
     baseSteps.push({
-      number: 2,
+      number: 6,
       title: 'Review Videos',
       description: 'Preview and approve generated lesson videos',
       icon: Video,
-      status: getStepStatus(2, videosStatus),
-      canEdit: lastCompletedStep >= 2
+      status: getStepStatus(6, videosStatus),
+      canEdit: lastCompletedStep >= 6
     });
   }
 
   const remainingSteps: WorkflowStep[] = [
     {
-      number: hasVideoFormat ? 3 : 2,
-      title: 'Quiz Generation',
-      description: 'Create assessments for each lesson',
-      icon: FileText,
-      status: getStepStatus(hasVideoFormat ? 3 : 2, quizzesStatus),
-      canEdit: lastCompletedStep >= (hasVideoFormat ? 3 : 2)
-    },
-    {
-      number: hasVideoFormat ? 4 : 3,
-      title: 'Presentation Setup',
-      description: 'Configure presentation theme and settings',
-      icon: Presentation,
-      status: getStepStatus(hasVideoFormat ? 4 : 3, presentationStatus),
-      canEdit: lastCompletedStep >= (hasVideoFormat ? 4 : 3)
-    },
-    {
-      number: hasVideoFormat ? 5 : 4,
-      title: 'Landing Page',
-      description: 'Customize your course marketing page',
-      icon: Globe,
-      status: getStepStatus(hasVideoFormat ? 5 : 4, landingPageStatus),
-      canEdit: lastCompletedStep >= (hasVideoFormat ? 5 : 4)
-    },
-    {
-      number: hasVideoFormat ? 6 : 5,
+      number: hasVideoFormat ? 7 : 6,
       title: 'Publish Course',
       description: 'Make your course live for students',
       icon: Rocket,
-      status: getStepStatus(hasVideoFormat ? 6 : 5, publishedStatus),
-      canEdit: lastCompletedStep >= (hasVideoFormat ? 6 : 5)
+      status: getStepStatus(hasVideoFormat ? 7 : 6, publishedStatus),
+      canEdit: lastCompletedStep >= (hasVideoFormat ? 7 : 6)
     },
     {
-      number: hasVideoFormat ? 7 : 6,
+      number: hasVideoFormat ? 8 : 7,
       title: 'Download Package',
       description: 'Export your complete course',
       icon: Download,
-      status: getStepStatus(hasVideoFormat ? 7 : 6, downloadedStatus),
-      canEdit: lastCompletedStep >= (hasVideoFormat ? 7 : 6)
+      status: getStepStatus(hasVideoFormat ? 8 : 7, downloadedStatus),
+      canEdit: lastCompletedStep >= (hasVideoFormat ? 8 : 7)
     }
   ];
 

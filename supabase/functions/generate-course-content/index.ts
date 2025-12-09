@@ -432,7 +432,7 @@ Deno.serve(async (req: Request) => {
 
     await updateProgress(supabase, courseId, 95, 'Saving course to database...', undefined, Array.from({ length: lessonCount }, (_, i) => i + 1));
 
-    const { data: updatedCourse, error: updateError } = await supabase
+    const { error: updateError } = await supabase
       .from('courses')
       .update({
         status: 'completed',
@@ -447,9 +447,7 @@ Deno.serve(async (req: Request) => {
         current_step: 2,
         last_completed_step: 1,
       })
-      .eq('id', courseId)
-      .select()
-      .single();
+      .eq('id', courseId);
 
     if (updateError) {
       console.error('Error updating course with generated content:', updateError);
@@ -457,41 +455,8 @@ Deno.serve(async (req: Request) => {
     }
 
     console.log("Course content generated and saved successfully");
-    console.log("Course content_format:", updatedCourse.content_format);
-    console.log("Course video_config:", JSON.stringify(updatedCourse.video_config));
-
-    if (updatedCourse.content_format === 'video' && updatedCourse.video_config?.enabled) {
-      console.log("✅ Video mode enabled, triggering video generation...");
-
-      try {
-        const videoGenUrl = `${supabaseUrl}/functions/v1/generate-lesson-videos`;
-        console.log("Calling video generation at:", videoGenUrl);
-
-        const videoGenResponse = await fetch(videoGenUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${supabaseServiceKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            courseId: courseId,
-            regenerateAll: true
-          }),
-        });
-
-        if (videoGenResponse.ok) {
-          const videoResult = await videoGenResponse.json();
-          console.log("✅ Video generation initiated successfully:", videoResult);
-        } else {
-          const errorText = await videoGenResponse.text();
-          console.error("❌ Failed to trigger video generation:", errorText);
-        }
-      } catch (videoError: any) {
-        console.error("❌ Error triggering video generation:", videoError.message);
-      }
-    } else {
-      console.log("ℹ️ Video mode NOT enabled. content_format:", updatedCourse.content_format, "video_config.enabled:", updatedCourse.video_config?.enabled);
-    }
+    console.log("User will review content at step 2 before proceeding");
+    console.log("Video generation (if enabled) will start after content approval");
 
     return new Response(
       JSON.stringify({
