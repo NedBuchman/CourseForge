@@ -16,6 +16,7 @@ export default function RegistrationPage({ onNavigate }: RegistrationPageProps) 
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
 
   const handleChange = (field: keyof typeof formData) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({ ...prev, [field]: e.target.value }));
@@ -27,11 +28,6 @@ export default function RegistrationPage({ onNavigate }: RegistrationPageProps) 
 
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
       return;
     }
 
@@ -134,12 +130,25 @@ export default function RegistrationPage({ onNavigate }: RegistrationPageProps) 
                   type="password"
                   value={formData.password}
                   onChange={handleChange('password')}
+                  onFocus={() => setShowPasswordRequirements(true)}
+                  onBlur={() => setShowPasswordRequirements(false)}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="••••••••"
                   required
-                  minLength={6}
                 />
               </div>
+              {showPasswordRequirements && (
+                <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-gray-700">
+                  <p className="font-semibold mb-1">Password must contain:</p>
+                  <ul className="space-y-1 ml-4 list-disc">
+                    <li>At least 12 characters</li>
+                    <li>One uppercase letter (A-Z)</li>
+                    <li>One lowercase letter (a-z)</li>
+                    <li>One number (0-9)</li>
+                    <li>One special character (@, $, !, %, etc.)</li>
+                  </ul>
+                </div>
+              )}
             </div>
 
             <div>
@@ -155,7 +164,6 @@ export default function RegistrationPage({ onNavigate }: RegistrationPageProps) 
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="••••••••"
                   required
-                  minLength={6}
                 />
               </div>
             </div>

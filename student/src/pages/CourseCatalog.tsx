@@ -22,6 +22,7 @@ interface Course {
 export default function CourseCatalog({ onNavigate, onLogout }: CourseCatalogProps) {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [enrolling, setEnrolling] = useState<string | null>(null);
   const session = studentAuth.getSession();
@@ -31,7 +32,14 @@ export default function CourseCatalog({ onNavigate, onLogout }: CourseCatalogPro
   }, []);
 
   const loadCourses = async () => {
-    if (!session) return;
+    if (!session) {
+      setError('No active session. Please log in again.');
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
 
     try {
       const [coursesResponse, enrollmentsResponse] = await Promise.all([
@@ -46,7 +54,10 @@ export default function CourseCatalog({ onNavigate, onLogout }: CourseCatalogPro
           .eq('student_id', session.student_id)
       ]);
 
-      if (coursesResponse.error) throw coursesResponse.error;
+      if (coursesResponse.error) {
+        console.error('Courses query error:', coursesResponse.error);
+        throw new Error('Failed to load courses. Please try again.');
+      }
 
       const enrolledCourseIds = new Set(
         enrollmentsResponse.data?.map(e => e.course_id) || []
@@ -59,8 +70,9 @@ export default function CourseCatalog({ onNavigate, onLogout }: CourseCatalogPro
       })) || [];
 
       setCourses(coursesWithEnrollment);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading courses:', error);
+      setError(error.message || 'Failed to load courses. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -157,7 +169,23 @@ export default function CourseCatalog({ onNavigate, onLogout }: CourseCatalogPro
           </div>
         </div>
 
-        {loading ? (
+        {error ? (
+          <div className="bg-white rounded-xl shadow-sm border p-12 text-center">
+            <div className="text-red-600 mb-4">
+              <svg className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Courses</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button
+              onClick={loadCourses}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+            >
+              Try Again
+            </button>
+          </div>
+        ) : loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
             <p className="text-gray-600 mt-4">Loading courses...</p>
@@ -166,7 +194,9 @@ export default function CourseCatalog({ onNavigate, onLogout }: CourseCatalogPro
           <div className="bg-white rounded-xl shadow-sm border p-12 text-center">
             <BookOpen className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No Courses Found</h3>
-            <p className="text-gray-600">Try adjusting your search</p>
+            <p className="text-gray-600">
+              {searchQuery ? 'Try adjusting your search' : 'No courses are available yet. Check back soon!'}
+            </p>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">

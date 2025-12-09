@@ -19,42 +19,50 @@ export interface StudentAuthResponse {
 export const studentAuth = {
   async register(email: string, password: string, firstName: string, lastName: string): Promise<StudentAuthResponse> {
     try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/student-auth`, {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/student-auth?action=register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          action: 'register',
           email,
           password,
-          first_name: firstName,
-          last_name: lastName,
+          firstName,
+          lastName,
         }),
       });
 
       const data = await response.json();
 
-      if (!response.ok) {
+      if (!response.ok || !data.success) {
         return { success: false, error: data.error || 'Registration failed' };
       }
 
-      this.setSession(data);
-      return { success: true, data };
+      const sessionData: StudentSession = {
+        student_id: data.student.id,
+        email: data.student.email,
+        first_name: firstName,
+        last_name: lastName,
+        session_token: crypto.randomUUID(),
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      };
+
+      this.setSession(sessionData);
+      return { success: true, data: sessionData };
     } catch (error) {
-      return { success: false, error: 'Network error during registration' };
+      console.error('Registration error:', error);
+      return { success: false, error: 'Network error. Please check your connection and try again.' };
     }
   },
 
   async login(email: string, password: string): Promise<StudentAuthResponse> {
     try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/student-auth`, {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/student-auth?action=login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          action: 'login',
           email,
           password,
         }),
@@ -62,14 +70,24 @@ export const studentAuth = {
 
       const data = await response.json();
 
-      if (!response.ok) {
-        return { success: false, error: data.error || 'Login failed' };
+      if (!response.ok || !data.success) {
+        return { success: false, error: data.error || 'Invalid email or password' };
       }
 
-      this.setSession(data);
-      return { success: true, data };
+      const sessionData: StudentSession = {
+        student_id: data.student.id,
+        email: data.student.email,
+        first_name: data.student.first_name,
+        last_name: data.student.last_name,
+        session_token: crypto.randomUUID(),
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      };
+
+      this.setSession(sessionData);
+      return { success: true, data: sessionData };
     } catch (error) {
-      return { success: false, error: 'Network error during login' };
+      console.error('Login error:', error);
+      return { success: false, error: 'Network error. Please check your connection and try again.' };
     }
   },
 
