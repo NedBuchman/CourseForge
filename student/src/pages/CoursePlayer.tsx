@@ -262,10 +262,11 @@ export default function CoursePlayer({ courseId, onNavigate, onLogout }: CourseP
                 </div>
               )}
 
-              <div className="prose max-w-none">
-                <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                  {currentLesson.content}
-                </div>
+              <div className="prose prose-lg max-w-none">
+                <div
+                  className="text-gray-700 leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: currentLesson.content }}
+                />
               </div>
 
               {!completedLessons.has(currentLessonIndex) && (
