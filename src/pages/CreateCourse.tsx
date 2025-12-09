@@ -84,8 +84,10 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
   const [showVideoReview, setShowVideoReview] = useState(false);
   const [showPresentationGeneration, setShowPresentationGeneration] = useState(false);
   const [showPresentationReview, setShowPresentationReview] = useState(false);
+  const [presentationReviewKey, setPresentationReviewKey] = useState(0);
   const [showLandingPageCustomization, setShowLandingPageCustomization] = useState(false);
   const [showLandingPageReview, setShowLandingPageReview] = useState(false);
+  const [landingPageReviewKey, setLandingPageReviewKey] = useState(0);
   const [showCoursePublished, setShowCoursePublished] = useState(false);
   const [showWorkflowDashboard, setShowWorkflowDashboard] = useState(false);
   const [courseToDelete, setCourseToDelete] = useState<Course | null>(null);
@@ -1302,6 +1304,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
 
   const handlePresentationGenerationComplete = () => {
     setShowPresentationGeneration(false);
+    setPresentationReviewKey(prev => prev + 1);
     setShowPresentationReview(true);
   };
 
@@ -1336,6 +1339,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
 
   const handleLandingPageCustomizationComplete = () => {
     setShowLandingPageCustomization(false);
+    setLandingPageReviewKey(prev => prev + 1);
     setShowLandingPageReview(true);
   };
 
@@ -1518,6 +1522,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
   if (showLandingPageReview && courseContent && currentCourseId) {
     return (
       <ReviewLandingPage
+        key={`landing-page-review-${landingPageReviewKey}`}
         courseId={currentCourseId}
         courseContent={courseContent}
         onBack={handleBackFromLandingPageReview}
@@ -1544,6 +1549,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
   if (showPresentationReview && courseContent && currentCourseId) {
     return (
       <ReviewPresentation
+        key={`presentation-review-${presentationReviewKey}`}
         courseId={currentCourseId}
         courseContent={courseContent}
         onBack={handleBackFromPresentationReview}
