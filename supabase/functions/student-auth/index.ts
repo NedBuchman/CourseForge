@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
-import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
+import * as bcrypt from "npm:bcryptjs@2.4.3";
 
 // Reverted to permissive CORS for development
 // This was changed during security audit but broke cloud IDE environments
@@ -190,7 +190,7 @@ Deno.serve(async (req: Request) => {
         throw new Error("An account with this email already exists");
       }
 
-      const passwordHash = await bcrypt.hash(password);
+      const passwordHash = await bcrypt.hash(password, 10);
 
       const { data: newStudent, error: insertError } = await supabase
         .from("student_accounts")
@@ -246,7 +246,7 @@ Deno.serve(async (req: Request) => {
       if (student) {
         isValidPassword = await bcrypt.compare(password, student.password_hash);
       } else {
-        await bcrypt.hash(password);
+        await bcrypt.hash(password, 10);
       }
 
       await constantTimeDelay(500);
@@ -355,7 +355,7 @@ Deno.serve(async (req: Request) => {
         throw new Error("Reset token has expired");
       }
 
-      const passwordHash = await bcrypt.hash(newPassword);
+      const passwordHash = await bcrypt.hash(newPassword, 10);
 
       await supabase
         .from("student_accounts")
