@@ -45,8 +45,11 @@ export default function CourseCatalog({ onNavigate, onLogout }: CourseCatalogPro
       const [coursesResponse, enrollmentsResponse] = await Promise.all([
         supabase
           .from('courses')
-          .select('id, title, description, difficulty_level, duration, target_audience, lessons')
+          .select('id, title, description, difficulty_level, duration, target_audience, lessons, quizzes_status, landing_page_status, published_at')
           .eq('status', 'completed')
+          .eq('quizzes_status', 'completed')
+          .in('landing_page_status', ['configured', 'completed'])
+          .not('published_at', 'is', null)
           .order('created_at', { ascending: false }),
         supabase
           .from('student_course_enrollments')
