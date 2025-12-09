@@ -1284,7 +1284,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
     }
 
     setShowVideoReview(false);
-    setShowLandingPageReview(true);
+    setShowCoursePublished(true);
   };
 
   const handleBackFromQuizGeneration = () => {
