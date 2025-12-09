@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { checkVideoStatus } from '../lib/edgeFunctions';
 import { Video, CheckCircle, XCircle, RefreshCw, Clock, Eye, Download, Loader, ArrowLeft, Home, LogOut } from 'lucide-react';
 import Toast from '../components/Toast';
 
@@ -95,6 +96,22 @@ const ReviewVideos: React.FC<ReviewVideosProps> = ({ courseId, onComplete, onBac
     }
 
     try {
+      const { data: quickCheck } = await supabase
+        .from('video_assets')
+        .select('generation_status')
+        .eq('course_id', courseId)
+        .eq('generation_status', 'processing');
+
+      const hasProcessingVideos = quickCheck && quickCheck.length > 0;
+
+      if (hasProcessingVideos || showRefreshIndicator) {
+        try {
+          await checkVideoStatus({ courseId });
+        } catch (statusError) {
+          console.error('Error checking video status from HeyGen:', statusError);
+        }
+      }
+
       const { data, error } = await supabase
         .from('video_assets')
         .select('*')
