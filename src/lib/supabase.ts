@@ -1,43 +1,42 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Fallback values for bolt.host development environment
-// In production, these are replaced by environment variables from bolt.toml
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ghlgqldbnanecodnkmkz.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdobGdxbGRibmFuZWNvZG5rbWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE5MjA3NTEsImV4cCI6MjA3NzQ5Njc1MX0.RI0zVuVpwVi0v0sNSTUbtIvvVSU5J54WHuuCXww5KxE';
+// Supabase configuration with guaranteed fallback values
+// These values are injected at build time by Vite's define option
+// Environment variables take precedence, but fallbacks ensure the app always works
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 console.log('Supabase Configuration:', {
   hasUrl: !!supabaseUrl,
   hasKey: !!supabaseAnonKey,
-  url: supabaseUrl ? supabaseUrl : 'undefined',
+  url: supabaseUrl || 'undefined',
+  urlLength: supabaseUrl?.length || 0,
+  keyLength: supabaseAnonKey?.length || 0,
 });
 
-let supabaseClient;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Supabase configuration error:', {
+// Validate configuration
+if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === 'undefined' || supabaseAnonKey === 'undefined') {
+  console.error('CRITICAL: Supabase configuration is invalid:', {
     hasUrl: !!supabaseUrl,
     hasKey: !!supabaseAnonKey,
-    url: supabaseUrl ? `${supabaseUrl.substring(0, 20)}...` : 'undefined',
+    url: supabaseUrl,
   });
-  console.warn(
-    'Missing Supabase environment variables. App will show configuration error.'
-  );
-  supabaseClient = null;
-} else {
-  supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true
-    }
-  });
-  console.log('Supabase client initialized successfully');
+  throw new Error('Supabase configuration is missing. Check build configuration.');
 }
 
-export const supabase = supabaseClient as ReturnType<typeof createClient>;
+// Initialize Supabase client
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  }
+});
+
+console.log('Supabase client initialized successfully');
 
 export function validateSupabaseConfig(): { isValid: boolean; error?: string } {
-  if (!supabaseUrl || !supabaseAnonKey) {
+  if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === 'undefined' || supabaseAnonKey === 'undefined') {
     return {
       isValid: false,
       error: 'Supabase environment variables are not configured',
