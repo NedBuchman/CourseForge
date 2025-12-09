@@ -41,11 +41,38 @@ const ReviewVideos: React.FC<ReviewVideosProps> = ({ courseId, onComplete, onBac
     failed: 0,
     approved: 0
   });
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showCompletionBanner, setShowCompletionBanner] = useState(false);
 
   useEffect(() => {
     loadVideos();
     loadCourseInfo();
   }, [courseId]);
+
+  // Auto-refresh polling when videos are processing
+  useEffect(() => {
+    if (videoStats.processing === 0) {
+      return;
+    }
+
+    const pollInterval = setInterval(() => {
+      loadVideos();
+    }, 15000); // Poll every 15 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [videoStats.processing, courseId]);
+
+  // Show completion banner when all videos finish processing
+  useEffect(() => {
+    const prevProcessing = sessionStorage.getItem(`processing_${courseId}`);
+
+    if (prevProcessing && parseInt(prevProcessing) > 0 && videoStats.processing === 0 && videoStats.total > 0) {
+      setShowCompletionBanner(true);
+      setTimeout(() => setShowCompletionBanner(false), 10000); // Hide after 10 seconds
+    }
+
+    sessionStorage.setItem(`processing_${courseId}`, videoStats.processing.toString());
+  }, [videoStats.processing, courseId]);
 
   const loadCourseInfo = async () => {
     const { data } = await supabase
@@ -60,8 +87,13 @@ const ReviewVideos: React.FC<ReviewVideosProps> = ({ courseId, onComplete, onBac
     }
   };
 
-  const loadVideos = async () => {
-    setLoading(true);
+  const loadVideos = async (showRefreshIndicator = false) => {
+    if (showRefreshIndicator) {
+      setIsRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+
     try {
       const { data, error } = await supabase
         .from('video_assets')
@@ -80,7 +112,12 @@ const ReviewVideos: React.FC<ReviewVideosProps> = ({ courseId, onComplete, onBac
       setToast({ message: 'Failed to load videos', type: 'error' });
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
+  };
+
+  const handleManualRefresh = () => {
+    loadVideos(true);
   };
 
   const calculateStats = (videoList: VideoAsset[]) => {
@@ -159,6 +196,15 @@ const ReviewVideos: React.FC<ReviewVideosProps> = ({ courseId, onComplete, onBac
   };
 
   const handleCompleteReview = async () => {
+    // Check if any videos are still processing
+    if (videoStats.processing > 0) {
+      setToast({
+        message: 'Some videos are still processing. Please wait for all videos to complete before continuing.',
+        type: 'error'
+      });
+      return;
+    }
+
     const allApproved = videos.every(v => v.approved || v.generation_status === 'failed');
 
     if (!allApproved) {
@@ -289,6 +335,20 @@ const ReviewVideos: React.FC<ReviewVideosProps> = ({ courseId, onComplete, onBac
           </div>
         </div>
 
+        {showCompletionBanner && (
+          <div className="bg-green-50 border-2 border-green-300 rounded-xl p-4 mb-6 animate-pulse">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-6 h-6 text-green-700" />
+              <div>
+                <p className="font-bold text-green-900">All videos have been generated!</p>
+                <p className="text-sm text-green-800">
+                  Please review each video and approve them to continue.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-6">
           <div className="flex items-start gap-3">
             <Clock className="w-5 h-5 text-blue-700 flex-shrink-0 mt-0.5" />
@@ -324,14 +384,34 @@ const ReviewVideos: React.FC<ReviewVideosProps> = ({ courseId, onComplete, onBac
 
         {videoStats.processing > 0 && (
           <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-4 mb-6">
-            <div className="flex items-center gap-3">
-              <Loader className="w-5 h-5 animate-spin text-blue-700" />
-              <div>
-                <p className="font-bold text-blue-900">Videos are still processing</p>
-                <p className="text-sm text-blue-800">
-                  {videoStats.processing} video{videoStats.processing !== 1 ? 's' : ''} currently being generated.
-                  This page will auto-refresh when they're ready.
+            <div className="flex items-start gap-3">
+              <Loader className="w-5 h-5 animate-spin text-blue-700 flex-shrink-0 mt-1" />
+              <div className="flex-1">
+                <p className="font-bold text-blue-900 mb-1">Videos are still processing</p>
+                <p className="text-sm text-blue-800 mb-2">
+                  {videoStats.processing} of {videoStats.total} video{videoStats.processing !== 1 ? 's' : ''} currently being generated.
+                  ({Math.round((videoStats.completed / videoStats.total) * 100)}% complete)
                 </p>
+                <p className="text-xs text-blue-700 mb-3">
+                  This page automatically refreshes every 15 seconds. Video generation typically takes 2-5 minutes per video.
+                </p>
+                <button
+                  onClick={handleManualRefresh}
+                  disabled={isRefreshing}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isRefreshing ? (
+                    <>
+                      <Loader className="w-4 h-4 animate-spin" />
+                      Refreshing...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4" />
+                      Refresh Status Now
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>
@@ -471,12 +551,21 @@ const ReviewVideos: React.FC<ReviewVideosProps> = ({ courseId, onComplete, onBac
             Back
           </button>
 
-          <button
-            onClick={handleCompleteReview}
-            className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors"
-          >
-            Complete Review & Continue
-          </button>
+          <div className="flex flex-col items-end gap-2">
+            {videoStats.processing > 0 && (
+              <p className="text-sm text-slate-600 flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                Waiting for {videoStats.processing} video{videoStats.processing !== 1 ? 's' : ''} to complete...
+              </p>
+            )}
+            <button
+              onClick={handleCompleteReview}
+              disabled={videoStats.processing > 0}
+              className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
+            >
+              Complete Review & Continue
+            </button>
+          </div>
         </div>
       </div>
 
