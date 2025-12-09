@@ -1,5 +1,19 @@
 CourseForge
 
+## CRITICAL: Before Deploying
+
+**READ THIS FIRST:** [CRITICAL_DEPLOYMENT_SETUP.md](./CRITICAL_DEPLOYMENT_SETUP.md)
+
+Your app will show a "Configuration Error" and not start if you don't set environment variables in your hosting platform BEFORE deployment. The `.env` file is excluded from git for security.
+
+Required environment variables:
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+See the critical deployment guide for complete setup instructions.
+
+---
+
 ## Video Generation Background Monitoring
 
 CourseForge includes an automated background checker that monitors video generation progress even when users are logged off. This ensures course creators always see accurate, up-to-date video status.

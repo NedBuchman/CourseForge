@@ -6,6 +6,24 @@
 
 ---
 
+## ⚠️ CRITICAL: Environment Variables Required
+
+**IMPORTANT:** Before deploying to any hosting platform, you MUST set environment variables in the platform's dashboard, or your app will not start.
+
+**See:** [CRITICAL_DEPLOYMENT_SETUP.md](./CRITICAL_DEPLOYMENT_SETUP.md) for complete instructions.
+
+### Required Variables (All Apps)
+```bash
+VITE_SUPABASE_URL=https://ghlgqldbnanecodnkmkz.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdobGdxbGRibmFuZWNvZG5rbWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE5MjA3NTEsImV4cCI6MjA3NzQ5Njc1MX0.RI0zVuVpwVi0v0sNSTUbtIvvVSU5J54WHuuCXww5KxE
+```
+
+**Why:** The `.env` file is excluded from git (in `.gitignore`) for security. Hosting platforms need these variables set in their dashboard BEFORE building.
+
+**What happens if you don't:** Your app will show "Configuration Error: CourseForge cannot start" and list missing environment variables.
+
+---
+
 ## 🎯 Executive Summary
 
 CourseForge is a complete, production-ready AI-powered course creation platform consisting of three integrated applications:
@@ -373,6 +391,27 @@ The build includes TypeScript type warnings (82 warnings) that don't prevent com
 - [x] Environment variables documented
 - [x] Security headers configured
 - [x] Documentation complete
+
+### ⚠️ CRITICAL FIRST STEP: Set Environment Variables
+
+**BEFORE deploying, set these environment variables in your hosting platform:**
+
+**For Netlify:**
+1. Go to Site settings → Build & deploy → Environment variables
+2. Add both variables with exact values:
+   - `VITE_SUPABASE_URL` = `https://ghlgqldbnanecodnkmkz.supabase.co`
+   - `VITE_SUPABASE_ANON_KEY` = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdobGdxbGRibmFuZWNvZG5rbWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE5MjA3NTEsImV4cCI6MjA3NzQ5Njc1MX0.RI0zVuVpwVi0v0sNSTUbtIvvVSU5J54WHuuCXww5KxE`
+3. Save and then trigger deployment
+
+**For Vercel:**
+1. Go to Settings → Environment Variables
+2. Add both variables with exact values (same as above)
+3. Select "Production" environment
+4. Save and redeploy
+
+**See [CRITICAL_DEPLOYMENT_SETUP.md](./CRITICAL_DEPLOYMENT_SETUP.md) for detailed instructions.**
+
+---
 
 ### Deployment Steps
 
