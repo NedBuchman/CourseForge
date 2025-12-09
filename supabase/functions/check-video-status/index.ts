@@ -167,10 +167,11 @@ Deno.serve(async (req: Request) => {
         heygenApiKey
       );
 
-      console.log(`Asset ${asset.id} HeyGen response:`, statusResult.status);
+      console.log(`Asset ${asset.id} HeyGen response:`, JSON.stringify(statusResult));
 
       if (statusResult.status === 'completed' && statusResult.video_url) {
-        await supabase
+        console.log(`Updating asset ${asset.id} to completed with URL: ${statusResult.video_url}`);
+        const { error: updateError } = await supabase
           .from('video_assets')
           .update({
             generation_status: 'completed',
@@ -182,13 +183,23 @@ Deno.serve(async (req: Request) => {
           })
           .eq('id', asset.id);
 
-        await supabase
+        if (updateError) {
+          console.error(`Failed to update asset ${asset.id}:`, updateError);
+        } else {
+          console.log(`Successfully updated asset ${asset.id}`);
+        }
+
+        const { error: queueError } = await supabase
           .from('video_generation_queue')
           .update({
             status: 'completed',
             completed_at: new Date().toISOString()
           })
           .eq('video_asset_id', asset.id);
+
+        if (queueError) {
+          console.error(`Failed to update queue for asset ${asset.id}:`, queueError);
+        }
 
         updatedCount++;
         completedCount++;
