@@ -58,21 +58,27 @@ export default function CoursePublished({
   const updatePublishedStatus = async () => {
     const { data: currentCourse } = await supabase
       .from('courses')
-      .select('last_completed_step, current_step')
+      .select('last_completed_step, current_step, content_format')
       .eq('id', courseId)
       .single();
+
+    if (!currentCourse) return;
+
+    const hasVideoFormat = currentCourse.content_format === 'video' || currentCourse.content_format === 'hybrid';
+    const publishStep = hasVideoFormat ? 7 : 6;
+    const downloadStep = hasVideoFormat ? 8 : 7;
 
     const updateData: any = {
       published_status: 'published',
       published_at: new Date().toISOString(),
     };
 
-    if (!currentCourse || currentCourse.last_completed_step < 5) {
-      updateData.last_completed_step = 5;
+    if (currentCourse.last_completed_step < publishStep) {
+      updateData.last_completed_step = publishStep;
     }
 
-    if (!currentCourse || currentCourse.current_step < 6) {
-      updateData.current_step = 6;
+    if (currentCourse.current_step < downloadStep) {
+      updateData.current_step = downloadStep;
     }
 
     await supabase
@@ -150,6 +156,12 @@ export default function CoursePublished({
   const handleExportProject = async () => {
     setIsExporting(true);
     try {
+      const { data: courseData } = await supabase
+        .from('courses')
+        .select('content_format')
+        .eq('id', courseId)
+        .single();
+
       const { data: landingConfigData } = await supabase
         .from('landing_page_configs')
         .select('*')
@@ -163,12 +175,15 @@ export default function CoursePublished({
 
       await exportCourseProject(courseId, courseContent, landingConfigData);
 
+      const hasVideoFormat = courseData?.content_format === 'video' || courseData?.content_format === 'hybrid';
+      const downloadStep = hasVideoFormat ? 8 : 7;
+
       await supabase
         .from('courses')
         .update({
           downloaded_status: 'downloaded',
           last_downloaded_at: new Date().toISOString(),
-          last_completed_step: 6,
+          last_completed_step: downloadStep,
         })
         .eq('id', courseId);
     } catch (err) {

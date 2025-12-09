@@ -1696,7 +1696,8 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
               <div className="space-y-2">
                 {courses.map(course => {
                   const progress = course.last_completed_step || 0;
-                  const totalSteps = 6;
+                  const hasVideoFormat = course.content_format === 'video' || course.content_format === 'hybrid';
+                  const totalSteps = hasVideoFormat ? 8 : 7;
                   const progressPercentage = Math.round((progress / totalSteps) * 100);
 
                   return (
