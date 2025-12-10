@@ -72,7 +72,7 @@ async function testDatabaseSchema() {
       const course = courses[0];
       const requiredFields = [
         'id', 'title', 'description', 'difficulty_level', 'target_audience',
-        'duration_weeks', 'learning_objectives', 'lessons', 'current_step',
+        'duration', 'learning_objectives', 'lessons', 'current_step',
         'last_completed_step', 'content_status', 'videos_status', 'quizzes_status',
         'presentation_status', 'landing_page_status', 'published_status',
         'downloaded_status', 'content_format', 'video_config'
@@ -179,7 +179,7 @@ async function testContentGeneration() {
       description: 'Test description',
       target_audience: 'Test audience',
       difficulty_level: 'intermediate',
-      duration_weeks: 4,
+      duration: '2-hours',
       learning_objectives: 'Test objectives',
     };
 
