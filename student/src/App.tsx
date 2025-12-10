@@ -24,23 +24,30 @@ interface AppState {
 function App() {
   const [appState, setAppState] = useState<AppState>({
     currentPage: 'landing',
-    isAuthenticated: studentAuth.isAuthenticated(),
+    isAuthenticated: false,
   });
 
   useEffect(() => {
-    const isAuth = studentAuth.isAuthenticated();
-    if (isAuth && appState.currentPage === 'landing') {
-      setAppState(prev => ({ ...prev, currentPage: 'dashboard', isAuthenticated: true }));
-    }
+    const checkAuth = async () => {
+      const isAuth = await studentAuth.isAuthenticated();
+      if (isAuth && appState.currentPage === 'landing') {
+        setAppState(prev => ({ ...prev, currentPage: 'dashboard', isAuthenticated: true }));
+      } else {
+        setAppState(prev => ({ ...prev, isAuthenticated: isAuth }));
+      }
+    };
+    checkAuth();
   }, []);
 
-  const navigateTo = (page: Page, courseIdOrLessonIndex?: string | number, quizIdOrAttemptId?: string) => {
+  const navigateTo = async (page: Page, courseIdOrLessonIndex?: string | number, quizIdOrAttemptId?: string) => {
+    const isAuthenticated = await studentAuth.isAuthenticated();
+
     if (page === 'lesson' && typeof courseIdOrLessonIndex === 'string') {
       setAppState({
         currentPage: page,
         selectedCourseId: courseIdOrLessonIndex,
         lessonIndex: 0,
-        isAuthenticated: studentAuth.isAuthenticated()
+        isAuthenticated
       });
     } else if (page === 'quiz') {
       setAppState({
@@ -48,7 +55,7 @@ function App() {
         selectedCourseId: appState.selectedCourseId,
         lessonIndex: typeof courseIdOrLessonIndex === 'number' ? courseIdOrLessonIndex : appState.lessonIndex,
         quizId: quizIdOrAttemptId,
-        isAuthenticated: studentAuth.isAuthenticated()
+        isAuthenticated
       });
     } else if (page === 'results') {
       setAppState({
@@ -56,20 +63,20 @@ function App() {
         selectedCourseId: appState.selectedCourseId,
         lessonIndex: appState.lessonIndex,
         attemptId: typeof courseIdOrLessonIndex === 'string' ? courseIdOrLessonIndex : quizIdOrAttemptId,
-        isAuthenticated: studentAuth.isAuthenticated()
+        isAuthenticated
       });
     } else {
       setAppState({
         currentPage: page,
         selectedCourseId: typeof courseIdOrLessonIndex === 'string' ? courseIdOrLessonIndex : appState.selectedCourseId,
         lessonIndex: typeof courseIdOrLessonIndex === 'number' ? courseIdOrLessonIndex : appState.lessonIndex,
-        isAuthenticated: studentAuth.isAuthenticated()
+        isAuthenticated
       });
     }
   };
 
-  const handleLogout = () => {
-    studentAuth.logout();
+  const handleLogout = async () => {
+    await studentAuth.logout();
     setAppState({ currentPage: 'landing', isAuthenticated: false });
   };
 

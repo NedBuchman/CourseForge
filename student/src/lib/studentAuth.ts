@@ -1,13 +1,10 @@
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SESSION_KEY = 'courseforge_student_session';
+import { supabase } from './supabase';
 
 export interface StudentSession {
   student_id: string;
   email: string;
   first_name: string;
   last_name: string;
-  session_token: string;
-  expires_at: string;
 }
 
 export interface StudentAuthResponse {
@@ -19,53 +16,35 @@ export interface StudentAuthResponse {
 export const studentAuth = {
   async register(email: string, password: string, firstName: string, lastName: string): Promise<StudentAuthResponse> {
     try {
-      console.log('Attempting registration for:', email);
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/student-auth?action=register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            role: 'student',
+            first_name: firstName,
+            last_name: lastName,
+          },
         },
-        body: JSON.stringify({
-          email,
-          password,
-          firstName,
-          lastName,
-        }),
       });
 
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
-      const responseText = await response.text();
-      console.log('Response text:', responseText);
-
-      if (!responseText) {
-        return { success: false, error: 'Server returned empty response. Please try again.' };
+      if (error) {
+        return { success: false, error: error.message };
       }
 
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (e) {
-        console.error('JSON parse error:', e);
-        return { success: false, error: 'Invalid server response. Please try again.' };
+      if (!data.user) {
+        return { success: false, error: 'Registration failed' };
       }
 
-      if (!response.ok || !data.success) {
-        return { success: false, error: data.error || 'Registration failed' };
-      }
-
-      const sessionData: StudentSession = {
-        student_id: data.student.id,
-        email: data.student.email,
-        first_name: firstName,
-        last_name: lastName,
-        session_token: crypto.randomUUID(),
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      return {
+        success: true,
+        data: {
+          student_id: data.user.id,
+          email: data.user.email!,
+          first_name: firstName,
+          last_name: lastName,
+        },
       };
-
-      this.setSession(sessionData);
-      return { success: true, data: sessionData };
     } catch (error) {
       console.error('Registration error:', error);
       return { success: false, error: 'Network error. Please check your connection and try again.' };
@@ -74,88 +53,76 @@ export const studentAuth = {
 
   async login(email: string, password: string): Promise<StudentAuthResponse> {
     try {
-      console.log('Attempting login for:', email);
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/student-auth?action=login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
-      console.log('Response status:', response.status);
-
-      const responseText = await response.text();
-      console.log('Response text:', responseText);
-
-      if (!responseText) {
-        return { success: false, error: 'Server returned empty response. Please try again.' };
+      if (error) {
+        return { success: false, error: error.message };
       }
 
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (e) {
-        console.error('JSON parse error:', e);
-        return { success: false, error: 'Invalid server response. Please try again.' };
+      if (!data.user) {
+        return { success: false, error: 'Invalid email or password' };
       }
 
-      if (!response.ok || !data.success) {
-        return { success: false, error: data.error || 'Invalid email or password' };
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', data.user.id)
+        .maybeSingle();
+
+      if (roleError) {
+        await supabase.auth.signOut();
+        return { success: false, error: 'Unable to verify user role. Please contact support.' };
       }
 
-      const sessionData: StudentSession = {
-        student_id: data.student.id,
-        email: data.student.email,
-        first_name: data.student.first_name,
-        last_name: data.student.last_name,
-        session_token: crypto.randomUUID(),
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      if (!roleData || roleData.role !== 'student') {
+        await supabase.auth.signOut();
+        return { success: false, error: 'This login is for students only. Course creators should use the creator login portal.' };
+      }
+
+      const firstName = data.user.user_metadata?.first_name || '';
+      const lastName = data.user.user_metadata?.last_name || '';
+
+      return {
+        success: true,
+        data: {
+          student_id: data.user.id,
+          email: data.user.email!,
+          first_name: firstName,
+          last_name: lastName,
+        },
       };
-
-      this.setSession(sessionData);
-      return { success: true, data: sessionData };
     } catch (error) {
       console.error('Login error:', error);
       return { success: false, error: 'Network error. Please check your connection and try again.' };
     }
   },
 
-  logout() {
-    localStorage.removeItem(SESSION_KEY);
+  async logout() {
+    await supabase.auth.signOut();
   },
 
-  getSession(): StudentSession | null {
-    const sessionStr = localStorage.getItem(SESSION_KEY);
-    if (!sessionStr) return null;
+  async getSession(): Promise<StudentSession | null> {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return null;
 
-    try {
-      const session: StudentSession = JSON.parse(sessionStr);
-
-      if (new Date(session.expires_at) < new Date()) {
-        this.logout();
-        return null;
-      }
-
-      return session;
-    } catch {
-      return null;
-    }
+    return {
+      student_id: session.user.id,
+      email: session.user.email!,
+      first_name: session.user.user_metadata?.first_name || '',
+      last_name: session.user.user_metadata?.last_name || '',
+    };
   },
 
-  setSession(session: StudentSession) {
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  async isAuthenticated(): Promise<boolean> {
+    const session = await this.getSession();
+    return session !== null;
   },
 
-  isAuthenticated(): boolean {
-    return this.getSession() !== null;
-  },
-
-  getStudentId(): string | null {
-    const session = this.getSession();
+  async getStudentId(): Promise<string | null> {
+    const session = await this.getSession();
     return session?.student_id || null;
   },
 };

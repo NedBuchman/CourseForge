@@ -99,6 +99,7 @@ export default function Registration({ onComplete }: RegistrationProps) {
         password: formData.password,
         options: {
           data: {
+            role: 'creator',
             first_name: formData.firstName,
             last_name: formData.lastName,
             phone: formData.phone,

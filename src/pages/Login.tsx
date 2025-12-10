@@ -37,6 +37,22 @@ export default function Login({ onLoginSuccess, onNavigateToRegister }: LoginPro
       if (signInError) throw signInError;
 
       if (data.user) {
+        const { data: roleData, error: roleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', data.user.id)
+          .single();
+
+        if (roleError || !roleData) {
+          await supabase.auth.signOut();
+          throw new Error('Unable to verify user role. Please contact support.');
+        }
+
+        if (roleData.role !== 'creator' && roleData.role !== 'admin' && roleData.role !== 'manager') {
+          await supabase.auth.signOut();
+          throw new Error('This login is for course creators only. Students should use the student login portal.');
+        }
+
         onLoginSuccess();
       }
     } catch (err: any) {
