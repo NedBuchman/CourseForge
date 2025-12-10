@@ -175,6 +175,12 @@ export default function EditQuizzes({
       const lesson = courseContent.lessons.find(l => l.lesson_number === lessonNumber);
       if (!lesson) throw new Error('Lesson not found');
 
+      // Get user session for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Authentication error: Please log out and log back in.');
+      }
+
       const existingQuestions = questions[lessonNumber] || [];
 
       const response = await fetch(
@@ -182,7 +188,7 @@ export default function EditQuizzes({
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'Authorization': `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({

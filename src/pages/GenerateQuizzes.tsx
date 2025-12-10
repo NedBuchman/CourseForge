@@ -98,6 +98,12 @@ export default function GenerateQuizzes({
         throw new Error('No lessons found in course content');
       }
 
+      // Get user session for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Authentication error: Please log out and log back in.');
+      }
+
       setGenerationProgress(10);
       setGenerationStatus('Calling AI to generate quiz questions...');
 
@@ -120,7 +126,7 @@ export default function GenerateQuizzes({
             {
               method: 'POST',
               headers: {
-                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                'Authorization': `Bearer ${session.access_token}`,
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
