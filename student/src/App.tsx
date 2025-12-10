@@ -9,8 +9,9 @@ import CourseCatalog from './pages/CourseCatalog';
 import LessonPlayer from './pages/LessonPlayer';
 import QuizTaker from './pages/QuizTaker';
 import QuizResults from './pages/QuizResults';
+import CourseCompletion from './pages/CourseCompletion';
 
-type Page = 'landing' | 'login' | 'register' | 'dashboard' | 'catalog' | 'lesson' | 'quiz' | 'results';
+type Page = 'landing' | 'login' | 'register' | 'dashboard' | 'catalog' | 'lesson' | 'quiz' | 'results' | 'completion';
 
 interface AppState {
   currentPage: Page;
@@ -63,6 +64,12 @@ function App() {
         selectedCourseId: appState.selectedCourseId,
         lessonIndex: appState.lessonIndex,
         attemptId: typeof courseIdOrLessonIndex === 'string' ? courseIdOrLessonIndex : quizIdOrAttemptId,
+        isAuthenticated
+      });
+    } else if (page === 'completion') {
+      setAppState({
+        currentPage: page,
+        selectedCourseId: appState.selectedCourseId,
         isAuthenticated
       });
     } else {
@@ -157,6 +164,18 @@ function App() {
             courseId={appState.selectedCourseId}
             lessonIndex={appState.lessonIndex}
             onNavigate={handleResultsNavigation}
+          />
+        </ErrorBoundary>
+      ) : (
+        <Dashboard onNavigate={navigateTo} onLogout={handleLogout} />
+      );
+    case 'completion':
+      return appState.selectedCourseId ? (
+        <ErrorBoundary>
+          <CourseCompletion
+            courseId={appState.selectedCourseId}
+            onNavigate={navigateTo}
+            onLogout={handleLogout}
           />
         </ErrorBoundary>
       ) : (

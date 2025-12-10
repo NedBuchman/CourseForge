@@ -7,7 +7,7 @@ interface QuizResultsProps {
   attemptId: string;
   courseId: string;
   lessonIndex: number;
-  onNavigate: (page: 'lesson' | 'quiz', lessonIndex?: number) => void;
+  onNavigate: (page: 'lesson' | 'quiz' | 'completion', lessonIndex?: number) => void;
 }
 
 interface QuizAttempt {
@@ -45,6 +45,7 @@ export default function QuizResults({ attemptId, courseId, lessonIndex, onNaviga
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [isLastLesson, setIsLastLesson] = useState(false);
+  const [courseCompleted, setCourseCompleted] = useState(false);
   const session = studentAuth.getSession();
 
   const PASSING_THRESHOLD = 60;
@@ -101,12 +102,56 @@ export default function QuizResults({ attemptId, courseId, lessonIndex, onNaviga
         .maybeSingle();
 
       if (courseData?.lessons) {
-        setIsLastLesson(lessonIndex === courseData.lessons.length - 1);
+        const lastLesson = lessonIndex === courseData.lessons.length - 1;
+        setIsLastLesson(lastLesson);
+
+        // Check if course is completed (all quizzes passed on the last lesson)
+        if (lastLesson && attemptData.passed) {
+          const completed = await checkCourseCompletion();
+          setCourseCompleted(completed);
+        }
       }
     } catch (error) {
       console.error('Error loading results:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkCourseCompletion = async (): Promise<boolean> => {
+    if (!session) return false;
+
+    try {
+      // Get all quizzes for this course
+      const { data: quizzes, error: quizzesError } = await supabase
+        .from('quizzes')
+        .select('id, lesson_number')
+        .eq('course_id', courseId)
+        .order('lesson_number');
+
+      if (quizzesError || !quizzes || quizzes.length === 0) {
+        return false;
+      }
+
+      // Check if student has passed all quizzes
+      for (const quiz of quizzes) {
+        const { data: attempts, error: attemptsError } = await supabase
+          .from('student_quiz_attempts')
+          .select('passed')
+          .eq('student_id', session.student_id)
+          .eq('quiz_id', quiz.id)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (attemptsError || !attempts || attempts.length === 0 || !attempts[0].passed) {
+          return false;
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error checking course completion:', error);
+      return false;
     }
   };
 
@@ -121,7 +166,11 @@ export default function QuizResults({ attemptId, courseId, lessonIndex, onNaviga
   };
 
   const continueToNextLesson = () => {
-    onNavigate('lesson', lessonIndex + 1);
+    if (isLastLesson && courseCompleted) {
+      onNavigate('completion');
+    } else {
+      onNavigate('lesson', lessonIndex + 1);
+    }
   };
 
   if (loading) {
@@ -281,10 +330,10 @@ export default function QuizResults({ attemptId, courseId, lessonIndex, onNaviga
                 <div className="space-y-3">
                   <button
                     onClick={continueToNextLesson}
-                    disabled={isLastLesson}
+                    disabled={isLastLesson && !courseCompleted}
                     className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <span>{isLastLesson ? 'Course Complete!' : 'Continue to Next Lesson'}</span>
+                    <span>{isLastLesson && courseCompleted ? 'View Certificate & Complete Course!' : isLastLesson ? 'Course Complete!' : 'Continue to Next Lesson'}</span>
                     {!isLastLesson && <ChevronRight className="h-5 w-5" />}
                   </button>
                   <button
