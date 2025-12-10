@@ -386,36 +386,16 @@ export default function CoursePlayer({ courseId, onNavigate, onLogout }: CourseP
                 />
               </div>
 
-              {(() => {
-                const currentLessonQuiz = getQuizForLesson(currentLessonIndex);
-                const hasQuiz = currentLessonQuiz !== null;
-                const lessonCompleted = completedLessons.has(currentLessonIndex);
-                const quizCompleted = completedQuizzes.has(currentLessonIndex);
-
-                return (
-                  <div className="mt-6 flex gap-3">
-                    <button
-                      onClick={() => markLessonComplete(currentLessonIndex)}
-                      disabled={lessonCompleted}
-                      className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <CheckCircle className="h-5 w-5" />
-                      <span>{lessonCompleted ? 'Completed' : 'Mark as Complete'}</span>
-                    </button>
-
-                    {hasQuiz && (
-                      <button
-                        onClick={startQuiz}
-                        disabled={!lessonCompleted || quizCompleted}
-                        className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Brain className="h-5 w-5" />
-                        <span>{quizCompleted ? 'Quiz Completed' : 'Take Quiz'}</span>
-                      </button>
-                    )}
-                  </div>
-                );
-              })()}
+              <div className="mt-6">
+                <button
+                  onClick={() => markLessonComplete(currentLessonIndex)}
+                  disabled={completedLessons.has(currentLessonIndex)}
+                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <CheckCircle className="h-5 w-5" />
+                  <span>{completedLessons.has(currentLessonIndex) ? 'Completed' : 'Mark as Complete'}</span>
+                </button>
+              </div>
             </div>
 
             <div className="flex justify-between">
@@ -428,14 +408,36 @@ export default function CoursePlayer({ courseId, onNavigate, onLogout }: CourseP
                 <span>Previous Lesson</span>
               </button>
 
-              <button
-                onClick={nextLesson}
-                disabled={currentLessonIndex === course.lessons.length - 1}
-                className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <span>Next Lesson</span>
-                <ChevronRight className="h-5 w-5" />
-              </button>
+              {(() => {
+                const currentLessonQuiz = getQuizForLesson(currentLessonIndex);
+                const hasQuiz = currentLessonQuiz !== null;
+                const lessonCompleted = completedLessons.has(currentLessonIndex);
+                const quizCompleted = completedQuizzes.has(currentLessonIndex);
+
+                if (hasQuiz) {
+                  return (
+                    <button
+                      onClick={startQuiz}
+                      disabled={!lessonCompleted || quizCompleted}
+                      className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Brain className="h-5 w-5" />
+                      <span>{quizCompleted ? 'Quiz Completed' : 'Take Quiz'}</span>
+                    </button>
+                  );
+                } else {
+                  return (
+                    <button
+                      onClick={nextLesson}
+                      disabled={currentLessonIndex === course.lessons.length - 1}
+                      className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span>Next Lesson</span>
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                  );
+                }
+              })()}
             </div>
           </div>
         </main>
