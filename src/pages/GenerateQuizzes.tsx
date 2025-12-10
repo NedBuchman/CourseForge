@@ -105,92 +105,115 @@ export default function GenerateQuizzes({
       }
 
       setGenerationProgress(10);
-      setGenerationStatus('Calling AI to generate quiz questions...');
 
-      let generateResponse;
-      try {
-        console.log('Calling edge function:', `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-quizzes`);
-        console.log('Request payload:', {
-          lessonsCount: courseContent.lessons.length,
-          questionsPerLesson,
-          firstLesson: courseContent.lessons[0]?.title
+      // Process lessons in batches to avoid payload size limits
+      const BATCH_SIZE = 3; // Process 3 lessons at a time
+      const totalLessons = courseContent.lessons.length;
+      const batches: typeof courseContent.lessons[] = [];
+
+      for (let i = 0; i < totalLessons; i += BATCH_SIZE) {
+        batches.push(courseContent.lessons.slice(i, i + BATCH_SIZE));
+      }
+
+      console.log(`Processing ${totalLessons} lessons in ${batches.length} batches of up to ${BATCH_SIZE} lessons each`);
+
+      const allQuizzes: Record<number, any[]> = {};
+      let processedLessons = 0;
+
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+        const batch = batches[batchIndex];
+        const batchNumber = batchIndex + 1;
+
+        setGenerationStatus(`Generating quizzes for lessons ${batch[0].lesson_number}-${batch[batch.length - 1].lesson_number} (batch ${batchNumber}/${batches.length})...`);
+
+        console.log(`Processing batch ${batchNumber}/${batches.length}:`, {
+          lessons: batch.map(l => l.lesson_number),
+          questionsPerLesson
         });
 
-        // Set a 10-minute timeout for quiz generation
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minutes
-
+        let generateResponse;
         try {
-          generateResponse = await fetch(
-            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-quizzes`,
-            {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                lessons: courseContent.lessons,
-                questionsPerLesson: questionsPerLesson,
-              }),
-              signal: controller.signal,
+          // Set a 3-minute timeout per batch
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutes per batch
+
+          try {
+            generateResponse = await fetch(
+              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-quizzes`,
+              {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${session.access_token}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  lessons: batch,
+                  questionsPerLesson: questionsPerLesson,
+                }),
+                signal: controller.signal,
+              }
+            );
+            clearTimeout(timeoutId);
+          } catch (abortError: any) {
+            clearTimeout(timeoutId);
+            if (abortError.name === 'AbortError') {
+              throw new Error(`Batch ${batchNumber} timed out after 3 minutes. This can happen with complex content. Try generating fewer questions per lesson.`);
             }
-          );
-          clearTimeout(timeoutId);
-        } catch (abortError: any) {
-          clearTimeout(timeoutId);
-          if (abortError.name === 'AbortError') {
-            throw new Error('Quiz generation timed out after 10 minutes. This can happen with large courses. Try: 1) Generating quizzes again, 2) Creating a shorter course, or 3) Contact support if the problem persists.');
+            throw abortError;
           }
-          throw abortError;
+        } catch (fetchError: any) {
+          console.error(`Fetch error for batch ${batchNumber}:`, fetchError);
+          throw new Error(`Network error in batch ${batchNumber}: ${fetchError.message || 'Failed to connect to quiz generation service'}`);
         }
-      } catch (fetchError: any) {
-        console.error('Fetch error:', fetchError);
-        console.error('Fetch error details:', {
-          message: fetchError.message,
-          stack: fetchError.stack,
-          name: fetchError.name
-        });
-        throw new Error(`Network error: ${fetchError.message || 'Failed to connect to quiz generation service'}`);
+
+        console.log(`Batch ${batchNumber} response status:`, generateResponse.status);
+
+        if (!generateResponse.ok) {
+          const errorText = await generateResponse.text();
+          console.error(`Edge function returned error for batch ${batchNumber}:`, errorText);
+          throw new Error(`Server error in batch ${batchNumber} (${generateResponse.status}): ${errorText.substring(0, 200)}`);
+        }
+
+        let generateData;
+        try {
+          generateData = await generateResponse.json();
+        } catch (parseError) {
+          console.error(`Failed to parse response JSON for batch ${batchNumber}:`, parseError);
+          throw new Error(`Invalid response format from quiz generation service (batch ${batchNumber})`);
+        }
+
+        console.log(`Batch ${batchNumber} response:`, generateData);
+
+        if (!generateData.success) {
+          console.error(`Quiz generation failed for batch ${batchNumber}:`, generateData);
+          const errorMessage = generateData.error || 'Failed to generate quizzes';
+          const details = generateData.details ? `\n\nDetails: ${JSON.stringify(generateData.details)}` : '';
+          throw new Error(`Batch ${batchNumber}: ${errorMessage}${details}`);
+        }
+
+        if (!generateData.quizzes || typeof generateData.quizzes !== 'object') {
+          console.error(`Invalid quizzes data structure for batch ${batchNumber}:`, generateData);
+          throw new Error(`Invalid quiz data received from server (batch ${batchNumber})`);
+        }
+
+        // Merge this batch's quizzes into the overall results
+        Object.assign(allQuizzes, generateData.quizzes);
+        processedLessons += batch.length;
+
+        // Update progress based on lessons processed
+        const progressPercent = 10 + Math.floor((processedLessons / totalLessons) * 60);
+        setGenerationProgress(progressPercent);
+
+        console.log(`Batch ${batchNumber} complete. Processed ${processedLessons}/${totalLessons} lessons`);
       }
 
-      console.log('Generate quizzes response status:', generateResponse.status);
-      console.log('Response headers:', Object.fromEntries(generateResponse.headers.entries()));
+      // All batches complete - validate we got all quizzes
+      const quizCount = Object.keys(allQuizzes).length;
+      console.log(`All batches complete. Received ${quizCount} quiz sets for ${totalLessons} lessons`);
 
-      if (!generateResponse.ok) {
-        const errorText = await generateResponse.text();
-        console.error('Edge function returned error:', errorText);
-        throw new Error(`Server error (${generateResponse.status}): ${errorText.substring(0, 200)}`);
-      }
-
-      let generateData;
-      try {
-        generateData = await generateResponse.json();
-      } catch (parseError) {
-        console.error('Failed to parse response JSON:', parseError);
-        throw new Error('Invalid response format from quiz generation service');
-      }
-
-      console.log('Quiz generation response:', generateData);
-
-      if (!generateData.success) {
-        console.error('Quiz generation failed:', generateData);
-        const errorMessage = generateData.error || 'Failed to generate quizzes';
-        const details = generateData.details ? `\n\nDetails: ${JSON.stringify(generateData.details)}` : '';
-        throw new Error(errorMessage + details);
-      }
-
-      if (!generateData.quizzes || typeof generateData.quizzes !== 'object') {
-        console.error('Invalid quizzes data structure:', generateData);
-        throw new Error('Invalid quiz data received from server');
-      }
-
-      const generatedQuizzes = generateData.quizzes;
-      const quizCount = Object.keys(generatedQuizzes).length;
-      console.log(`Received ${quizCount} quiz sets`);
-
-      if (quizCount !== courseContent.lessons.length) {
-        console.warn(`Expected ${courseContent.lessons.length} quiz sets but received ${quizCount}`);
+      if (quizCount !== totalLessons) {
+        console.warn(`Expected ${totalLessons} quiz sets but received ${quizCount}`);
+        throw new Error(`Quiz generation incomplete: got ${quizCount} out of ${totalLessons} lessons`);
       }
 
       setGenerationProgress(70);
@@ -210,7 +233,7 @@ export default function GenerateQuizzes({
       let savedCount = 0;
       for (const lesson of courseContent.lessons) {
         try {
-          const lessonQuizzes = generatedQuizzes[lesson.lesson_number];
+          const lessonQuizzes = allQuizzes[lesson.lesson_number];
 
           if (!lessonQuizzes || !Array.isArray(lessonQuizzes) || lessonQuizzes.length === 0) {
             console.error(`No quizzes found for lesson ${lesson.lesson_number}`);
