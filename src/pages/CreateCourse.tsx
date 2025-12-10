@@ -97,6 +97,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
 
   const [formData, setFormData] = useState({
     subject: '',
+    description: '',
     audience: '',
     difficulty: '',
     duration: '',
@@ -606,6 +607,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
       const courseData = {
         user_id: user.id,
         title: formData.subject,
+        description: formData.description,
         topic: formData.subject,
         target_audience: formData.audience,
         difficulty_level: formData.difficulty,
@@ -1892,6 +1894,22 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
                       "Introduction to Python Programming" • "Effective Email Marketing for Small Businesses" • "Workplace Safety and OSHA Compliance"
                     </div>
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-lg font-bold text-slate-900 mb-2">
+                    Course Description
+                  </label>
+                  <p className="text-slate-600 mb-3">Brief summary shown to students in the course catalog (1-2 sentences recommended).</p>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={(e) => handleInputChange('description', e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-slate-300 rounded-xl focus:border-blue-600 focus:outline-none transition-colors bg-slate-50 focus:bg-white min-h-24 resize-y"
+                    placeholder="e.g., Learn fundamental data analysis techniques using Excel and Google Sheets, with practical examples from real retail businesses."
+                    maxLength={500}
+                  />
+                  <div className="text-right text-sm text-slate-500 mt-1">{formData.description.length}/500 characters</div>
                 </div>
 
                 <div>
