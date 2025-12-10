@@ -186,7 +186,7 @@ export default function CoursePlayer({ courseId, onNavigate, onLogout }: CourseP
   };
 
   const getQuizForLesson = (lessonIndex: number): Quiz | null => {
-    return quizzes.find(q => q.module_index === lessonIndex) || null;
+    return quizzes.find(q => q.module_index === lessonIndex + 1) || null;
   };
 
   const startQuiz = () => {
