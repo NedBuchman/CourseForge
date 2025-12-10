@@ -1292,9 +1292,23 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
     setShowLessonContentReview(true);
   };
 
-  const handleQuizGenerationComplete = () => {
-    setShowQuizGeneration(false);
-    setShowPresentationGeneration(true);
+  const handleQuizGenerationComplete = async () => {
+    if (!courseId) return;
+
+    try {
+      const { error } = await supabase
+        .from('quizzes')
+        .update({ approved: true })
+        .eq('course_id', courseId);
+
+      if (error) throw error;
+
+      setShowQuizGeneration(false);
+      setShowPresentationGeneration(true);
+    } catch (error) {
+      console.error('Error approving quizzes:', error);
+      alert('Failed to approve quizzes. Please try again.');
+    }
   };
 
   const handleBackFromPresentationGeneration = () => {
