@@ -215,9 +215,11 @@ export default function CoursePlayer({ courseId, onNavigate, onLogout }: CourseP
 
     let correct = 0;
     quiz.questions.forEach(q => {
-      if (selectedAnswers[q.id] === q.correct_answer) {
+      // Only count as correct if answered AND matches correct answer
+      if (selectedAnswers[q.id] && selectedAnswers[q.id] === q.correct_answer) {
         correct++;
       }
+      // Unanswered questions are counted as incorrect (no increment)
     });
 
     const score = Math.round((correct / quiz.questions.length) * 100);
@@ -254,9 +256,9 @@ export default function CoursePlayer({ courseId, onNavigate, onLogout }: CourseP
           passed: passed,
           answers: quiz.questions.map(q => ({
             question_id: q.id,
-            student_answer: selectedAnswers[q.id],
+            student_answer: selectedAnswers[q.id] || null,
             correct_answer: q.correct_answer,
-            is_correct: selectedAnswers[q.id] === q.correct_answer
+            is_correct: selectedAnswers[q.id] ? selectedAnswers[q.id] === q.correct_answer : false
           }))
         })
         .select('id')
@@ -271,8 +273,8 @@ export default function CoursePlayer({ courseId, onNavigate, onLogout }: CourseP
       const answersToInsert = quiz.questions.map(q => ({
         attempt_id: attemptData.id,
         question_id: q.id,
-        student_answer: selectedAnswers[q.id],
-        is_correct: selectedAnswers[q.id] === q.correct_answer,
+        student_answer: selectedAnswers[q.id] || null,
+        is_correct: selectedAnswers[q.id] ? selectedAnswers[q.id] === q.correct_answer : false,
         answered_at: new Date().toISOString()
       }));
 
@@ -592,16 +594,14 @@ export default function CoursePlayer({ courseId, onNavigate, onLogout }: CourseP
                     {currentQuizIndex < quiz.questions.length - 1 ? (
                       <button
                         onClick={() => setCurrentQuizIndex(currentQuizIndex + 1)}
-                        disabled={!selectedAnswers[currentQuestion.id]}
-                        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                       >
                         Next Question
                       </button>
                     ) : (
                       <button
                         onClick={submitQuiz}
-                        disabled={quiz.questions.some(q => !selectedAnswers[q.id])}
-                        className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
                       >
                         Submit Quiz
                       </button>
@@ -652,7 +652,7 @@ export default function CoursePlayer({ courseId, onNavigate, onLogout }: CourseP
                               </p>
                               <p className="text-sm text-gray-700">
                                 Your answer: <span className={isCorrect ? 'text-green-700 font-medium' : 'text-red-700 font-medium'}>
-                                  {selectedAnswers[q.id]}
+                                  {selectedAnswers[q.id] || '(No answer)'}
                                 </span>
                               </p>
                               {!isCorrect && (
