@@ -425,18 +425,8 @@ export default function CoursePlayer({ courseId, onNavigate, onLogout }: CourseP
                       <span>{quizCompleted ? 'Quiz Completed' : 'Take Quiz'}</span>
                     </button>
                   );
-                } else {
-                  return (
-                    <button
-                      onClick={nextLesson}
-                      disabled={currentLessonIndex === course.lessons.length - 1}
-                      className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <span>Next Lesson</span>
-                      <ChevronRight className="h-5 w-5" />
-                    </button>
-                  );
                 }
+                return null;
               })()}
             </div>
           </div>
