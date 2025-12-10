@@ -288,8 +288,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           />
         </div>
 
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap">
             <button
               onClick={togglePlayPause}
               className="text-white hover:text-blue-400 transition-colors"
@@ -331,7 +331,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 step="0.1"
                 value={volume}
                 onChange={handleVolumeChange}
-                className="w-20 h-1 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                className="w-20 h-1 bg-slate-600 rounded-lg appearance-none cursor-pointer hidden sm:block"
                 style={{
                   background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${volume * 100}%, #475569 ${volume * 100}%, #475569 100%)`
                 }}
@@ -365,7 +365,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               </button>
 
               {showSpeedMenu && (
-                <div className="absolute bottom-full right-0 mb-2 bg-slate-900 rounded-lg shadow-lg py-2 min-w-[120px]">
+                <div className="absolute bottom-full right-0 mb-2 bg-slate-900 rounded-lg shadow-lg py-2 min-w-[120px] z-50">
                   {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((speed) => (
                     <button
                       key={speed}
@@ -383,7 +383,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
             <button
               onClick={togglePictureInPicture}
-              className="text-white hover:text-blue-400 transition-colors"
+              className="text-white hover:text-blue-400 transition-colors hidden sm:block"
               title="Picture in Picture"
             >
               <PictureInPicture2 className="w-5 h-5" />

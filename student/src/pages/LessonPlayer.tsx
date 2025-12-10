@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, LogOut, ChevronLeft, ChevronRight, CheckCircle, PlayCircle, Brain } from 'lucide-react';
+import { BookOpen, LogOut, ChevronLeft, ChevronRight, CheckCircle, PlayCircle, Brain, ChevronDown, ChevronUp, FileText } from 'lucide-react';
 import { studentAuth } from '../lib/studentAuth';
 import { supabase } from '../lib/supabase';
 import LessonAIChat from '../components/LessonAIChat';
+import VideoPlayer from '../components/VideoPlayer';
 
 interface LessonPlayerProps {
   courseId: string;
@@ -38,6 +39,15 @@ export default function LessonPlayer({ courseId, lessonIndex, onNavigate, onLogo
   const [completedQuizzes, setCompletedQuizzes] = useState<Set<number>>(new Set());
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState(true);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoCollapsed, setVideoCollapsed] = useState(false);
+  const [textCollapsed, setTextCollapsed] = useState(false);
+  const [videoTracking, setVideoTracking] = useState({
+    started: false,
+    lastPosition: 0,
+    watchPercentage: 0,
+    completed: false
+  });
   const session = studentAuth.getSession();
 
   useEffect(() => {
@@ -46,7 +56,14 @@ export default function LessonPlayer({ courseId, lessonIndex, onNavigate, onLogo
 
   useEffect(() => {
     setCurrentLessonIndex(lessonIndex);
+    loadVideoForLesson(lessonIndex);
   }, [lessonIndex]);
+
+  useEffect(() => {
+    if (session && courseId && currentLessonIndex >= 0) {
+      loadVideoForLesson(currentLessonIndex);
+    }
+  }, [currentLessonIndex, courseId, session]);
 
   const loadCourse = async () => {
     if (!session) return;
@@ -115,6 +132,103 @@ export default function LessonPlayer({ courseId, lessonIndex, onNavigate, onLogo
       setCourse(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadVideoForLesson = async (lessonIdx: number) => {
+    if (!session || !courseId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('video_assets')
+        .select('video_url')
+        .eq('course_id', courseId)
+        .eq('asset_type', 'lesson')
+        .eq('asset_reference_id', (lessonIdx + 1).toString())
+        .eq('generation_status', 'completed')
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error loading video:', error);
+        setVideoUrl(null);
+        return;
+      }
+
+      setVideoUrl(data?.video_url || null);
+
+      const { data: trackingData } = await supabase
+        .from('lesson_video_views')
+        .select('*')
+        .eq('student_id', session.student_id)
+        .eq('course_id', courseId)
+        .eq('lesson_index', lessonIdx)
+        .maybeSingle();
+
+      if (trackingData) {
+        setVideoTracking({
+          started: true,
+          lastPosition: trackingData.last_position || 0,
+          watchPercentage: trackingData.watch_percentage || 0,
+          completed: trackingData.completed || false
+        });
+      } else {
+        setVideoTracking({
+          started: false,
+          lastPosition: 0,
+          watchPercentage: 0,
+          completed: false
+        });
+      }
+    } catch (error) {
+      console.error('Error loading video:', error);
+      setVideoUrl(null);
+    }
+  };
+
+  const handleVideoStart = async () => {
+    if (!session) return;
+
+    setVideoTracking(prev => ({ ...prev, started: true }));
+
+    try {
+      await supabase
+        .from('lesson_video_views')
+        .upsert({
+          student_id: session.student_id,
+          course_id: courseId,
+          lesson_index: currentLessonIndex,
+          started_at: new Date().toISOString(),
+        });
+    } catch (error) {
+      console.error('Error tracking video start:', error);
+    }
+  };
+
+  const handleVideoProgress = async (data: { position: number; percentage: number; duration: number }) => {
+    if (!session) return;
+
+    setVideoTracking(prev => ({
+      ...prev,
+      lastPosition: data.position,
+      watchPercentage: data.percentage,
+      completed: data.percentage >= 95
+    }));
+
+    try {
+      await supabase
+        .from('lesson_video_views')
+        .upsert({
+          student_id: session.student_id,
+          course_id: courseId,
+          lesson_index: currentLessonIndex,
+          last_position: Math.floor(data.position),
+          watch_percentage: data.percentage,
+          video_duration: Math.floor(data.duration),
+          completed: data.percentage >= 95,
+          updated_at: new Date().toISOString()
+        });
+    } catch (error) {
+      console.error('Error tracking video progress:', error);
     }
   };
 
@@ -298,17 +412,82 @@ export default function LessonPlayer({ courseId, lessonIndex, onNavigate, onLogo
                 )}
               </div>
 
-              {currentLesson.video_url && (
-                <div className="mb-6 bg-gray-900 rounded-lg aspect-video flex items-center justify-center">
-                  <PlayCircle className="h-16 w-16 text-white" />
+              {videoUrl && (
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <PlayCircle className="h-5 w-5 text-blue-600" />
+                      <h3 className="text-lg font-semibold text-gray-900">Lesson Video</h3>
+                      {videoTracking.completed && (
+                        <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">
+                          Watched
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setVideoCollapsed(!videoCollapsed)}
+                      className="flex items-center gap-1 text-gray-600 hover:text-gray-900 text-sm"
+                    >
+                      {videoCollapsed ? (
+                        <>
+                          <span>Show Video</span>
+                          <ChevronDown className="h-4 w-4" />
+                        </>
+                      ) : (
+                        <>
+                          <span>Hide Video</span>
+                          <ChevronUp className="h-4 w-4" />
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {!videoCollapsed && (
+                    <div className="rounded-lg overflow-hidden shadow-lg">
+                      <VideoPlayer
+                        videoUrl={videoUrl}
+                        title={currentLesson.title}
+                        onStart={handleVideoStart}
+                        onProgress={handleVideoProgress}
+                        className="w-full aspect-video"
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
-              <div className="prose prose-lg max-w-none">
-                <div
-                  className="text-gray-700 leading-relaxed"
-                  dangerouslySetInnerHTML={{ __html: currentLesson.content }}
-                />
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-blue-600" />
+                    <h3 className="text-lg font-semibold text-gray-900">Lesson Content</h3>
+                  </div>
+                  <button
+                    onClick={() => setTextCollapsed(!textCollapsed)}
+                    className="flex items-center gap-1 text-gray-600 hover:text-gray-900 text-sm"
+                  >
+                    {textCollapsed ? (
+                      <>
+                        <span>Show Content</span>
+                        <ChevronDown className="h-4 w-4" />
+                      </>
+                    ) : (
+                      <>
+                        <span>Hide Content</span>
+                        <ChevronUp className="h-4 w-4" />
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {!textCollapsed && (
+                  <div className="prose prose-lg max-w-none">
+                    <div
+                      className="text-gray-700 leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: currentLesson.content }}
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="mt-6 flex gap-4">
