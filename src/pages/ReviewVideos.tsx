@@ -589,20 +589,20 @@ const ReviewVideos: React.FC<ReviewVideosProps> = ({ courseId, onComplete, onBac
 
       {selectedVideo && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 overflow-y-auto"
           onClick={() => setSelectedVideo(null)}
         >
           <div
-            className="bg-white rounded-2xl p-6 max-w-4xl w-full"
+            className="bg-white rounded-2xl p-6 max-w-3xl w-full my-8 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center mb-4 sticky top-0 bg-white z-10 pb-2">
               <h3 className="text-2xl font-bold text-slate-900">
                 Lesson {selectedVideo.asset_reference_id} Video
               </h3>
               <button
                 onClick={() => setSelectedVideo(null)}
-                className="text-slate-500 hover:text-slate-700"
+                className="text-slate-500 hover:text-slate-700 text-2xl leading-none"
               >
                 ✕
               </button>
@@ -612,7 +612,7 @@ const ReviewVideos: React.FC<ReviewVideosProps> = ({ courseId, onComplete, onBac
               <video
                 controls
                 autoPlay
-                className="w-full rounded-lg mb-4"
+                className="w-full rounded-lg mb-4 max-h-[50vh]"
                 src={selectedVideo.video_url}
               >
                 Your browser does not support video playback.
@@ -621,12 +621,12 @@ const ReviewVideos: React.FC<ReviewVideosProps> = ({ courseId, onComplete, onBac
 
             <div className="bg-slate-50 rounded-lg p-4 mb-4">
               <h4 className="font-bold text-slate-900 mb-2">Video Script:</h4>
-              <p className="text-sm text-slate-700 whitespace-pre-wrap">
+              <p className="text-sm text-slate-700 whitespace-pre-wrap max-h-48 overflow-y-auto">
                 {selectedVideo.script_text}
               </p>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex gap-3 sticky bottom-0 bg-white pt-2">
               <button
                 onClick={() => setSelectedVideo(null)}
                 className="flex-1 px-6 py-3 bg-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-300 transition-colors"
