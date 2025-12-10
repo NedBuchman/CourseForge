@@ -111,23 +111,65 @@ async function testAnalyticsViews() {
   console.log('\n=== Testing Analytics Views ===\n');
 
   try {
-    const { data: courseStats, error: courseError } = await supabase
-      .from('course_enrollment_stats')
+    // Test course_student_overview view (used by CourseAnalytics page)
+    const { data: studentOverview, error: overviewError } = await supabase
+      .from('course_student_overview')
       .select('*')
       .limit(5);
 
-    logTest('Analytics Views', 'course_enrollment_stats view accessible',
-      !courseError,
-      courseError ? courseError.message : 'View exists for aggregated data');
+    logTest('Analytics Views', 'course_student_overview view accessible',
+      !overviewError,
+      overviewError ? overviewError.message : 'View exists for course overview data');
 
-    const { data: completionRates, error: completionError } = await supabase
-      .from('course_completion_rates')
+    // Test course_lesson_analytics view
+    const { data: lessonAnalytics, error: lessonError } = await supabase
+      .from('course_lesson_analytics')
       .select('*')
       .limit(5);
 
-    logTest('Analytics Views', 'course_completion_rates view accessible',
-      !completionError,
-      completionError ? completionError.message : 'View exists for completion metrics');
+    logTest('Analytics Views', 'course_lesson_analytics view accessible',
+      !lessonError,
+      lessonError ? lessonError.message : 'View exists for lesson analytics');
+
+    // Test course_quiz_analytics view
+    const { data: quizAnalytics, error: quizError } = await supabase
+      .from('course_quiz_analytics')
+      .select('*')
+      .limit(5);
+
+    logTest('Analytics Views', 'course_quiz_analytics view accessible',
+      !quizError,
+      quizError ? quizError.message : 'View exists for quiz analytics');
+
+    // Test student_performance_summary view
+    const { data: studentPerformance, error: performanceError } = await supabase
+      .from('student_performance_summary')
+      .select('*')
+      .limit(5);
+
+    logTest('Analytics Views', 'student_performance_summary view accessible',
+      !performanceError,
+      performanceError ? performanceError.message : 'View exists for student performance');
+
+    // Test quiz_question_difficulty view
+    const { data: questionDifficulty, error: difficultyError } = await supabase
+      .from('quiz_question_difficulty')
+      .select('*')
+      .limit(5);
+
+    logTest('Analytics Views', 'quiz_question_difficulty view accessible',
+      !difficultyError,
+      difficultyError ? difficultyError.message : 'View exists for question difficulty analysis');
+
+    // Test lesson_retake_analytics view
+    const { data: retakeAnalytics, error: retakeError } = await supabase
+      .from('lesson_retake_analytics')
+      .select('*')
+      .limit(5);
+
+    logTest('Analytics Views', 'lesson_retake_analytics view accessible',
+      !retakeError,
+      retakeError ? retakeError.message : 'View exists for lesson retake metrics');
 
   } catch (error) {
     logTest('Analytics Views', 'Analytics views', false, error.message);
