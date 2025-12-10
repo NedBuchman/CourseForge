@@ -271,7 +271,7 @@ const ReviewVideos: React.FC<ReviewVideosProps> = ({ courseId, onComplete, onBac
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
