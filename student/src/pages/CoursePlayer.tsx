@@ -630,40 +630,81 @@ export default function CoursePlayer({ courseId, onNavigate, onLogout }: CourseP
                     </p>
                   </div>
 
-                  <div className="space-y-4 mb-6">
+                  <div className="space-y-6 mb-6">
                     {quiz.questions.map((q, idx) => {
                       const isCorrect = selectedAnswers[q.id] === q.correct_answer;
+                      const studentAnswer = selectedAnswers[q.id];
+
                       return (
                         <div
                           key={q.id}
-                          className={`p-4 rounded-lg border-2 ${
-                            isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
-                          }`}
+                          className="p-5 rounded-lg border-2 border-gray-200 bg-white shadow-sm"
                         >
-                          <div className="flex items-start gap-2 mb-2">
+                          <div className="flex items-start gap-3 mb-4">
                             {isCorrect ? (
-                              <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                                <CheckCircle className="h-5 w-5 text-green-600" />
+                              </div>
                             ) : (
-                              <X className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
+                                <X className="h-5 w-5 text-red-600" />
+                              </div>
                             )}
                             <div className="flex-1">
-                              <p className="font-medium text-gray-900 mb-1">
-                                Question {idx + 1}: {q.question_text}
+                              <p className="font-semibold text-gray-900 text-lg mb-1">
+                                Question {idx + 1}
                               </p>
-                              <p className="text-sm text-gray-700">
-                                Your answer: <span className={isCorrect ? 'text-green-700 font-medium' : 'text-red-700 font-medium'}>
-                                  {selectedAnswers[q.id] || '(No answer)'}
-                                </span>
+                              <p className="text-gray-700 mb-4">
+                                {q.question_text}
                               </p>
-                              {!isCorrect && (
-                                <p className="text-sm text-gray-700 mt-1">
-                                  Correct answer: <span className="text-green-700 font-medium">{q.correct_answer}</span>
-                                </p>
-                              )}
+
+                              <div className="space-y-2">
+                                {Object.entries(q.options).map(([key, value]) => {
+                                  const isStudentAnswer = studentAnswer === key;
+                                  const isCorrectAnswer = q.correct_answer === key;
+
+                                  let optionStyle = 'bg-gray-50 border-gray-200';
+                                  let iconElement = null;
+
+                                  if (isStudentAnswer && isCorrectAnswer) {
+                                    optionStyle = 'bg-green-50 border-green-500 border-2';
+                                    iconElement = <CheckCircle className="h-5 w-5 text-green-600" />;
+                                  } else if (isStudentAnswer && !isCorrectAnswer) {
+                                    optionStyle = 'bg-red-50 border-red-500 border-2';
+                                    iconElement = <X className="h-5 w-5 text-red-600" />;
+                                  } else if (!isStudentAnswer && isCorrectAnswer) {
+                                    optionStyle = 'bg-green-50 border-green-400 border-2';
+                                    iconElement = <CheckCircle className="h-5 w-5 text-green-600" />;
+                                  }
+
+                                  return (
+                                    <div
+                                      key={key}
+                                      className={`p-3 rounded-lg border ${optionStyle} transition-colors`}
+                                    >
+                                      <div className="flex items-start gap-3">
+                                        <div className="flex-shrink-0 w-6 flex items-center justify-center">
+                                          {iconElement}
+                                        </div>
+                                        <div className="flex-1">
+                                          <div className="font-medium text-gray-900">{key}</div>
+                                          <div className="text-gray-700">{value}</div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
                               {q.explanation && (
-                                <p className="text-sm text-gray-600 mt-2 italic">
-                                  {q.explanation}
-                                </p>
+                                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                  <p className="text-sm font-medium text-blue-900 mb-1">
+                                    Explanation:
+                                  </p>
+                                  <p className="text-sm text-blue-800">
+                                    {q.explanation}
+                                  </p>
+                                </div>
                               )}
                             </div>
                           </div>
