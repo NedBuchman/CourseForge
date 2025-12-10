@@ -6,6 +6,7 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import Toast from '../components/Toast';
 import ReviewLessonContent from './ReviewLessonContent';
 import GenerateQuizzes from './GenerateQuizzes';
+import EditQuizzes from './EditQuizzes';
 import GeneratePresentation from './GeneratePresentation';
 import ReviewPresentation from './ReviewPresentation';
 import CustomizeLandingPage from './CustomizeLandingPage';
@@ -81,6 +82,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
   const [statusBanner, setStatusBanner] = useState<{ type: 'info' | 'error'; message: string } | null>(null);
   const [showLessonContentReview, setShowLessonContentReview] = useState(false);
   const [showQuizGeneration, setShowQuizGeneration] = useState(false);
+  const [showEditQuizzes, setShowEditQuizzes] = useState(false);
   const [showVideoReview, setShowVideoReview] = useState(false);
   const [showPresentationGeneration, setShowPresentationGeneration] = useState(false);
   const [showPresentationReview, setShowPresentationReview] = useState(false);
@@ -128,7 +130,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
 
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [showResults, showLessonContentReview, showVideoReview, showQuizGeneration, showPresentationGeneration, showPresentationReview, showLandingPageCustomization, showLandingPageReview, showCoursePublished, showNewCourseForm]);
+  }, [showResults, showLessonContentReview, showVideoReview, showQuizGeneration, showEditQuizzes, showPresentationGeneration, showPresentationReview, showLandingPageCustomization, showLandingPageReview, showCoursePublished, showNewCourseForm]);
 
   const checkConfiguration = async () => {
     try {
@@ -1294,28 +1296,24 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
     setShowLessonContentReview(true);
   };
 
-  const handleQuizGenerationComplete = async () => {
-    if (!courseId) return;
+  const handleQuizGenerationComplete = () => {
+    setShowQuizGeneration(false);
+    setShowEditQuizzes(true);
+  };
 
-    try {
-      const { error } = await supabase
-        .from('quizzes')
-        .update({ approved: true })
-        .eq('course_id', courseId);
+  const handleBackFromEditQuizzes = () => {
+    setShowEditQuizzes(false);
+    setShowQuizGeneration(true);
+  };
 
-      if (error) throw error;
-
-      setShowQuizGeneration(false);
-      setShowPresentationGeneration(true);
-    } catch (error) {
-      console.error('Error approving quizzes:', error);
-      alert('Failed to approve quizzes. Please try again.');
-    }
+  const handleEditQuizzesComplete = () => {
+    setShowEditQuizzes(false);
+    setShowPresentationGeneration(true);
   };
 
   const handleBackFromPresentationGeneration = () => {
     setShowPresentationGeneration(false);
-    setShowQuizGeneration(true);
+    setShowEditQuizzes(true);
   };
 
   const handlePresentationGenerationComplete = () => {
@@ -1628,6 +1626,19 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
         courseContent={courseContent}
         onBack={handleBackFromQuizGeneration}
         onComplete={handleQuizGenerationComplete}
+        onBackToCourses={handleBackToCourseList}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
+  if (showEditQuizzes && courseContent && currentCourseId) {
+    return (
+      <EditQuizzes
+        courseId={currentCourseId}
+        courseContent={courseContent}
+        onBack={handleBackFromEditQuizzes}
+        onComplete={handleEditQuizzesComplete}
         onBackToCourses={handleBackToCourseList}
         onLogout={handleLogout}
       />

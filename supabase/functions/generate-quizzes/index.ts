@@ -95,32 +95,73 @@ Deno.serve(async (req: Request) => {
         console.log(`Generating ${questionsPerLesson} questions for lesson ${lesson.lesson_number}: ${lesson.title}`);
 
         const objectives = Array.isArray(lesson.objectives) ? lesson.objectives.join(', ') : '';
-        const prompt = `You are an expert assessment designer. Respond ONLY with valid JSON. No text before or after.
+        const prompt = `You are an expert educational assessment designer specializing in creating high-quality, pedagogically sound multiple-choice questions. Your questions should test deep understanding, not just memorization.
 
 **LESSON ${lesson.lesson_number}: ${lesson.title}**
-Content: ${lesson.content}
-Objectives: ${objectives}
 
-**REQUIREMENTS**
-1. Create ${questionsPerLesson} multiple-choice questions testing lesson understanding
-2. Each question: clear text, 4 options (A-D), correct answer, brief explanation, difficulty (easy/medium/hard)
-3. Mix difficulty levels and test recall, comprehension, application, analysis
-4. Ensure correct_answer is ONLY a single letter: A, B, C, or D
-5. Each option should be a complete, clear statement
+**LESSON CONTENT:**
+${lesson.content}
 
-**JSON FORMAT**
+**LEARNING OBJECTIVES:**
+${objectives}
+
+**YOUR TASK:**
+Create ${questionsPerLesson} multiple-choice questions that effectively assess student understanding of this lesson.
+
+**QUALITY REQUIREMENTS:**
+
+1. **Cognitive Diversity** - Questions should test different cognitive levels:
+   - Remember: Recall facts and basic concepts (20%)
+   - Understand: Explain ideas and concepts (30%)
+   - Apply: Use information in new situations (30%)
+   - Analyze: Make connections and distinctions (20%)
+
+2. **Difficulty Distribution** - Mix difficulty levels:
+   - Easy: 30% (straightforward recall and basic understanding)
+   - Medium: 50% (requires comprehension and application)
+   - Hard: 20% (requires analysis and synthesis)
+
+3. **Question Quality:**
+   - Clear, unambiguous question stems
+   - All options should be plausible (avoid obvious wrong answers)
+   - Options should be similar in length and complexity
+   - Avoid "all of the above" or "none of the above"
+   - Use scenarios and real-world applications when possible
+   - Test understanding of WHY, not just WHAT
+
+4. **Answer Options:**
+   - Exactly 4 options per question (A, B, C, D)
+   - All distractors should be plausible but incorrect
+   - Avoid giving away the answer through grammar clues or length
+   - Mix up the position of correct answers (don't always make it 'A')
+
+5. **Explanations:**
+   - Explain WHY the correct answer is right
+   - Briefly mention why key distractors are wrong
+   - Help students learn from mistakes
+   - Keep explanations concise but informative (2-3 sentences)
+
+**CRITICAL FORMAT REQUIREMENTS:**
+- Respond ONLY with valid JSON (no markdown, no code blocks, no extra text)
+- correct_answer must be ONLY a single letter: A, B, C, or D
+- Each option should be a complete, clear statement WITHOUT labels like "A)" or "Option A:"
+
+**JSON FORMAT:**
 {
   "questions": [
     {
-      "question_text": "Question text?",
+      "question_text": "Clear, specific question?",
       "question_type": "single-answer",
-      "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correct_answer": "A",
-      "explanation": "Brief explanation",
-      "difficulty": "medium"
+      "options": ["First option", "Second option", "Third option", "Fourth option"],
+      "correct_answer": "B",
+      "explanation": "Explanation of correct answer and why other options are incorrect.",
+      "difficulty": "medium",
+      "cognitive_level": "understand"
     }
   ]
-}`;
+}
+
+Generate exactly ${questionsPerLesson} high-quality questions now:`;
 
         const claudeResponse = await fetch("https://api.anthropic.com/v1/messages", {
           method: "POST",
@@ -131,8 +172,8 @@ Objectives: ${objectives}
           },
           body: JSON.stringify({
             model: "claude-sonnet-4-20250514",
-            max_tokens: 3000,
-            temperature: 0.5,
+            max_tokens: 4096,
+            temperature: 0.7,
             messages: [
               {
                 role: "user",
