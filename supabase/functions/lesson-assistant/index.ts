@@ -27,9 +27,9 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openaiApiKey) {
-      throw new Error("OpenAI API key not configured");
+    const anthropicApiKey = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!anthropicApiKey) {
+      throw new Error("ANTHROPIC_API_KEY not configured");
     }
 
     const body: RequestBody = await req.json();
@@ -77,36 +77,36 @@ Guidelines:
 - Be friendly and supportive`;
 
     const messages = [
-      { role: "system", content: systemPrompt },
       ...chatHistory.map(msg => ({
-        role: msg.role === 'user' ? 'user' : 'assistant',
+        role: msg.role,
         content: msg.content
       })),
       { role: "user", content: userMessage }
     ];
 
-    const openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+    const anthropicResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${openaiApiKey}`,
+        "x-api-key": anthropicApiKey,
+        "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages,
-        temperature: 0.7,
+        model: "claude-haiku-4-5-20251001",
         max_tokens: 800,
+        system: systemPrompt,
+        messages,
       }),
     });
 
-    if (!openaiResponse.ok) {
-      const errorData = await openaiResponse.text();
-      console.error("OpenAI API error:", errorData);
-      throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+    if (!anthropicResponse.ok) {
+      const errorData = await anthropicResponse.text();
+      console.error("Anthropic API error:", errorData);
+      throw new Error(`Anthropic API error: ${anthropicResponse.status}`);
     }
 
-    const data = await openaiResponse.json();
-    const assistantMessage = data.choices[0]?.message?.content;
+    const data = await anthropicResponse.json();
+    const assistantMessage = data.content?.[0]?.text;
 
     if (!assistantMessage) {
       throw new Error("No response from AI");
