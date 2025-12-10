@@ -208,6 +208,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
     setShowNewCourseForm(true);
     setFormData({
       subject: '',
+      description: '',
       audience: '',
       difficulty: '',
       duration: '',
@@ -247,6 +248,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
 
       setFormData({
         subject: data.title || '',
+        description: data.description || '',
         audience: data.target_audience || '',
         difficulty: data.difficulty_level || '',
         duration: data.duration || '',
@@ -1398,6 +1400,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
     setSelectedCourse(null);
     setFormData({
       subject: '',
+      description: '',
       audience: '',
       difficulty: '',
       duration: '',
