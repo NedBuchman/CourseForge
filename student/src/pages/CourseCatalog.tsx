@@ -4,7 +4,7 @@ import { studentAuth } from '../lib/studentAuth';
 import { supabase } from '../lib/supabase';
 
 interface CourseCatalogProps {
-  onNavigate: (page: 'dashboard' | 'course', courseId?: string) => void;
+  onNavigate: (page: 'landing' | 'login' | 'dashboard' | 'course', courseId?: string) => void;
   onLogout: () => void;
 }
 
@@ -32,36 +32,33 @@ export default function CourseCatalog({ onNavigate, onLogout }: CourseCatalogPro
   }, []);
 
   const loadCourses = async () => {
-    if (!session) {
-      setError('No active session. Please log in again.');
-      setLoading(false);
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
     try {
-      const [coursesResponse, enrollmentsResponse] = await Promise.all([
-        supabase
-          .from('courses')
-          .select('id, title, description, difficulty_level, duration, target_audience, lessons')
-          .eq('published_status', 'published')
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('student_course_enrollments')
-          .select('course_id')
-          .eq('student_id', session.student_id)
-      ]);
+      const coursesResponse = await supabase
+        .from('courses')
+        .select('id, title, description, difficulty_level, duration, target_audience, lessons')
+        .eq('published_status', 'published')
+        .order('created_at', { ascending: false });
 
       if (coursesResponse.error) {
         console.error('Courses query error:', coursesResponse.error);
         throw new Error('Failed to load courses. Please try again.');
       }
 
-      const enrolledCourseIds = new Set(
-        enrollmentsResponse.data?.map(e => e.course_id) || []
-      );
+      let enrolledCourseIds = new Set<string>();
+
+      if (session) {
+        const enrollmentsResponse = await supabase
+          .from('student_course_enrollments')
+          .select('course_id')
+          .eq('student_id', session.student_id);
+
+        enrolledCourseIds = new Set(
+          enrollmentsResponse.data?.map(e => e.course_id) || []
+        );
+      }
 
       const coursesWithEnrollment = (coursesResponse.data || [])
         .filter(course => {
@@ -135,24 +132,52 @@ export default function CourseCatalog({ onNavigate, onLogout }: CourseCatalogPro
                 <BookOpen className="h-7 w-7 text-blue-600" />
                 <span className="text-xl font-bold text-gray-900">CourseForge</span>
               </div>
-              <button
-                onClick={() => onNavigate('dashboard')}
-                className="text-gray-600 hover:text-gray-900 font-medium"
-              >
-                My Dashboard
-              </button>
+              {session ? (
+                <button
+                  onClick={() => onNavigate('dashboard')}
+                  className="text-gray-600 hover:text-gray-900 font-medium"
+                >
+                  My Dashboard
+                </button>
+              ) : (
+                <button
+                  onClick={() => onNavigate('landing')}
+                  className="text-gray-600 hover:text-gray-900 font-medium"
+                >
+                  Home
+                </button>
+              )}
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">
-                {session?.first_name} {session?.last_name}
-              </span>
-              <button
-                onClick={onLogout}
-                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900"
-              >
-                <LogOut className="h-5 w-5" />
-                <span>Log Out</span>
-              </button>
+              {session ? (
+                <>
+                  <span className="text-sm text-gray-600">
+                    {session.first_name} {session.last_name}
+                  </span>
+                  <button
+                    onClick={onLogout}
+                    className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900"
+                  >
+                    <LogOut className="h-5 w-5" />
+                    <span>Log Out</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => onNavigate('login')}
+                    className="px-4 py-2 text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Log In
+                  </button>
+                  <button
+                    onClick={() => onNavigate('login')}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                  >
+                    Sign Up
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -246,7 +271,14 @@ export default function CourseCatalog({ onNavigate, onLogout }: CourseCatalogPro
                     </div>
                   </div>
 
-                  {course.isEnrolled ? (
+                  {!session ? (
+                    <button
+                      onClick={() => onNavigate('login')}
+                      className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                    >
+                      Login to Enroll
+                    </button>
+                  ) : course.isEnrolled ? (
                     <button
                       onClick={() => onNavigate('course', course.id)}
                       className="w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
