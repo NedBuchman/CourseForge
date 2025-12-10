@@ -86,7 +86,21 @@ Deno.serve(async (req: Request) => {
     const allQuizzes: Record<number, any[]> = {};
     const errors: Array<{ lesson: number; error: string }> = [];
 
+    // Add timeout for the entire operation (9 minutes)
+    const startTime = Date.now();
+    const maxDuration = 540000; // 9 minutes
+
     for (const lesson of lessons) {
+      // Check if we're approaching timeout
+      if (Date.now() - startTime > maxDuration) {
+        console.warn(`Approaching timeout limit, stopping at lesson ${lesson.lesson_number}`);
+        errors.push({
+          lesson: lesson.lesson_number,
+          error: 'Generation stopped due to time limit. Please try generating fewer lessons or with fewer questions per lesson.'
+        });
+        break;
+      }
+
       try {
         if (!lesson.lesson_number || !lesson.title || !lesson.content) {
           throw new Error(`Invalid lesson data: missing required fields (lesson_number, title, or content)`);
@@ -163,25 +177,40 @@ Create ${questionsPerLesson} multiple-choice questions that effectively assess s
 
 Generate exactly ${questionsPerLesson} high-quality questions now:`;
 
-        const claudeResponse = await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": claudeApiKey,
-            "anthropic-version": "2023-06-01",
-          },
-          body: JSON.stringify({
-            model: "claude-sonnet-4-20250514",
-            max_tokens: 4096,
-            temperature: 0.7,
-            messages: [
-              {
-                role: "user",
-                content: prompt,
-              },
-            ],
-          }),
-        });
+        // Add timeout for individual Claude API call (90 seconds)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 90000);
+
+        let claudeResponse;
+        try {
+          claudeResponse = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": claudeApiKey,
+              "anthropic-version": "2023-06-01",
+            },
+            body: JSON.stringify({
+              model: "claude-sonnet-4-20250514",
+              max_tokens: 4096,
+              temperature: 0.7,
+              messages: [
+                {
+                  role: "user",
+                  content: prompt,
+                },
+              ],
+            }),
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+        } catch (fetchError: any) {
+          clearTimeout(timeoutId);
+          if (fetchError.name === 'AbortError') {
+            throw new Error(`Claude API timeout after 90 seconds for lesson ${lesson.lesson_number}`);
+          }
+          throw fetchError;
+        }
 
         if (!claudeResponse.ok) {
           const errorText = await claudeResponse.text();

@@ -110,20 +110,34 @@ export default function GenerateQuizzes({
           firstLesson: courseContent.lessons[0]?.title
         });
 
-        generateResponse = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-quizzes`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              lessons: courseContent.lessons,
-              questionsPerLesson: questionsPerLesson,
-            }),
+        // Set a 10-minute timeout for quiz generation
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minutes
+
+        try {
+          generateResponse = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-quizzes`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                lessons: courseContent.lessons,
+                questionsPerLesson: questionsPerLesson,
+              }),
+              signal: controller.signal,
+            }
+          );
+          clearTimeout(timeoutId);
+        } catch (abortError: any) {
+          clearTimeout(timeoutId);
+          if (abortError.name === 'AbortError') {
+            throw new Error('Quiz generation timed out after 10 minutes. This can happen with large courses. Try: 1) Generating quizzes again, 2) Creating a shorter course, or 3) Contact support if the problem persists.');
           }
-        );
+          throw abortError;
+        }
       } catch (fetchError: any) {
         console.error('Fetch error:', fetchError);
         console.error('Fetch error details:', {
