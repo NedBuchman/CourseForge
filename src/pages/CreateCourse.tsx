@@ -380,9 +380,57 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setUploadedFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+      const newFiles = Array.from(e.target.files);
+
+      // Check file sizes upfront
+      const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+      const oversizedFiles = newFiles.filter(f => f.size > MAX_FILE_SIZE);
+
+      if (oversizedFiles.length > 0) {
+        setToast({
+          message: `Some files exceed 10MB: ${oversizedFiles.map(f => f.name).join(', ')}. Please use smaller files.`,
+          type: 'error'
+        });
+        return;
+      }
+
+      // Estimate total content size
+      let totalEstimatedTokens = 0;
+      for (const file of newFiles) {
+        // Rough estimate: 1 KB ≈ 250 tokens for text content
+        totalEstimatedTokens += Math.ceil((file.size / 1024) * 250);
+      }
+
+      // Add existing files
+      for (const file of uploadedFiles) {
+        totalEstimatedTokens += Math.ceil((file.size / 1024) * 250);
+      }
+
+      const MAX_CONTENT_TOKENS = 50000;
+      if (totalEstimatedTokens > MAX_CONTENT_TOKENS) {
+        const maxMB = Math.floor((MAX_CONTENT_TOKENS / 250) / 1024);
+        setToast({
+          message: `Total file size would be too large (~${Math.ceil(totalEstimatedTokens).toLocaleString()} tokens estimated). Please limit files to ~${maxMB}MB total or use shorter documents.`,
+          type: 'error'
+        });
+        setStatusBanner({
+          type: 'error',
+          message: `Document size limit: Your uploaded files are too large. The system can process approximately ${Math.floor(MAX_CONTENT_TOKENS / 1.33).toLocaleString()} words (~${maxMB}MB of text content). Please use smaller or fewer documents.`
+        });
+        return;
+      }
+
+      setUploadedFiles(prev => [...prev, ...newFiles]);
+
+      // Show helpful info if getting close to limit
+      if (totalEstimatedTokens > MAX_CONTENT_TOKENS * 0.7) {
+        setToast({
+          message: `Files uploaded successfully. Note: You're approaching the content size limit. If generation fails, try using smaller documents.`,
+          type: 'info'
+        });
+      }
     }
   };
 
@@ -576,7 +624,8 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
         );
 
         const estimatedTokens = Math.ceil(totalWords * 1.33);
-        const MAX_CONTENT_TOKENS = 100000;
+        // Reduced from 100,000 to 50,000 to account for prompt overhead and stay well under 200k token limit
+        const MAX_CONTENT_TOKENS = 50000;
 
         if (estimatedTokens > MAX_CONTENT_TOKENS) {
           const maxWords = Math.floor(MAX_CONTENT_TOKENS / 1.33);
@@ -2214,7 +2263,7 @@ export default function CreateCourse({ onComplete, onBack, onViewAnalytics }: Cr
                     <label htmlFor="fileUpload" className="cursor-pointer">
                       <Upload className="w-12 h-12 text-slate-400 mx-auto mb-3" />
                       <div className="text-slate-700 font-semibold mb-1">Click to upload or drag and drop</div>
-                      <div className="text-sm text-slate-500">PDF, DOC, DOCX, TXT, MD (max 10MB each)</div>
+                      <div className="text-sm text-slate-500">PDF, DOC, DOCX, TXT, MD (max 10MB each, ~200KB total recommended)</div>
                     </label>
                   </div>
 
