@@ -27,6 +27,7 @@
       img-src 'self' data: https: blob:;
       font-src 'self' data:;
       connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.bolt.host;
+      media-src 'self' https: blob: data:;
       worker-src 'self' blob:;
       frame-ancestors 'none';
       base-uri 'self';
