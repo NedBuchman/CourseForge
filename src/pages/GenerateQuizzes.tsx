@@ -517,7 +517,7 @@ export default function GenerateQuizzes({
                         <div className="text-xs text-slate-500 mt-1">Shown to students</div>
                       </div>
                       <div className="bg-white p-4 rounded-lg border-2 border-slate-200 text-center">
-                        <div className="text-4xl font-black text-blue-600 mb-1">{uniqueCombinations.toLocaleString()}</div>
+                        <div className="text-4xl font-black text-blue-600 mb-1">{(uniqueCombinations || 0).toLocaleString()}</div>
                         <div className="text-sm font-semibold text-slate-700">Unique Quiz Variations</div>
                         <div className="text-xs text-slate-500 mt-1">Possible combinations</div>
                       </div>

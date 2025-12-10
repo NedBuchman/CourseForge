@@ -174,7 +174,9 @@ export default function CourseAnalytics({
 
   const formatDate = (dateString: string): string => {
     if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString();
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '-';
+    return date.toLocaleDateString();
   };
 
   if (loading) {
@@ -285,15 +287,15 @@ export default function CourseAnalytics({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <StatCard
                 title="Total Enrolled"
-                value={overview.total_enrolled.toLocaleString()}
-                subtitle={`${overview.students_with_activity} active`}
+                value={(overview.total_enrolled || 0).toLocaleString()}
+                subtitle={`${overview.students_with_activity || 0} active`}
                 icon={<Users className="w-6 h-6" />}
                 color="blue"
               />
               <StatCard
                 title="Course Completion"
                 value={`${overview.completion_rate?.toFixed(1) || 0}%`}
-                subtitle={`${overview.total_completed} students completed`}
+                subtitle={`${overview.total_completed || 0} students completed`}
                 icon={<Target className="w-6 h-6" />}
                 color="green"
               />
@@ -306,8 +308,8 @@ export default function CourseAnalytics({
               />
               <StatCard
                 title="Active Last 7 Days"
-                value={overview.active_last_7_days.toLocaleString()}
-                subtitle={`${overview.active_last_30_days} in last 30 days`}
+                value={(overview.active_last_7_days || 0).toLocaleString()}
+                subtitle={`${overview.active_last_30_days || 0} in last 30 days`}
                 icon={<TrendingUp className="w-6 h-6" />}
                 color="orange"
               />

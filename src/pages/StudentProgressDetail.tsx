@@ -178,12 +178,16 @@ export default function StudentProgressDetail({
 
   const formatDate = (dateString: string): string => {
     if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString();
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '-';
+    return date.toLocaleDateString();
   };
 
   const formatDateTime = (dateString: string): string => {
     if (!dateString) return '-';
-    return new Date(dateString).toLocaleString();
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '-';
+    return date.toLocaleString();
   };
 
   if (loading) {

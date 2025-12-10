@@ -49,7 +49,7 @@ export default function HorizontalBarChart({
                 </span>
                 {showValues && (
                   <span className="text-sm font-bold text-slate-900 ml-2">
-                    {item.value.toLocaleString()}
+                    {(item.value || 0).toLocaleString()}
                   </span>
                 )}
               </div>
