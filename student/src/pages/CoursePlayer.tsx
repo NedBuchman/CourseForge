@@ -49,8 +49,12 @@ export default function CoursePlayer({ courseId, onNavigate, onLogout }: CourseP
   const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<{ [key: string]: string }>({});
   const [showResults, setShowResults] = useState(false);
+  const [quizScore, setQuizScore] = useState(0);
+  const [quizPassed, setQuizPassed] = useState(false);
   const [loading, setLoading] = useState(true);
   const session = studentAuth.getSession();
+
+  const PASSING_THRESHOLD = 60;
 
   useEffect(() => {
     loadCourse();
@@ -217,30 +221,94 @@ export default function CoursePlayer({ courseId, onNavigate, onLogout }: CourseP
     });
 
     const score = Math.round((correct / quiz.questions.length) * 100);
+    const passed = score >= PASSING_THRESHOLD;
 
-    const newCompletedQuizzes = new Set(completedQuizzes);
-    newCompletedQuizzes.add(currentLessonIndex);
-    setCompletedQuizzes(newCompletedQuizzes);
-
-    const quizScores = Array.from(completedQuizzes).reduce((acc, idx) => {
-      acc[idx] = 100;
-      return acc;
-    }, {} as { [key: number]: number });
-    quizScores[currentLessonIndex] = score;
+    setQuizScore(score);
+    setQuizPassed(passed);
 
     try {
-      await supabase
-        .from('student_course_enrollments')
-        .update({
-          progress: {
-            completed_lessons: Array.from(completedLessons),
-            total_lessons: course.lessons.length,
-            last_accessed_lesson: currentLessonIndex,
-            quiz_scores: quizScores,
-          }
-        })
+      // Get the next attempt number for this quiz
+      const { data: existingAttempts } = await supabase
+        .from('student_quiz_attempts')
+        .select('attempt_number')
         .eq('student_id', session.student_id)
-        .eq('course_id', courseId);
+        .eq('quiz_id', quiz.id)
+        .order('attempt_number', { ascending: false })
+        .limit(1);
+
+      const attemptNumber = existingAttempts && existingAttempts.length > 0
+        ? existingAttempts[0].attempt_number + 1
+        : 1;
+
+      // Save the quiz attempt
+      const { data: attemptData, error: attemptError } = await supabase
+        .from('student_quiz_attempts')
+        .insert({
+          student_id: session.student_id,
+          quiz_id: quiz.id,
+          course_id: courseId,
+          attempt_number: attemptNumber,
+          started_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+          score: score,
+          passed: passed,
+          answers: quiz.questions.map(q => ({
+            question_id: q.id,
+            student_answer: selectedAnswers[q.id],
+            correct_answer: q.correct_answer,
+            is_correct: selectedAnswers[q.id] === q.correct_answer
+          }))
+        })
+        .select('id')
+        .single();
+
+      if (attemptError) {
+        console.error('Error saving quiz attempt:', attemptError);
+        return;
+      }
+
+      // Save individual answers
+      const answersToInsert = quiz.questions.map(q => ({
+        attempt_id: attemptData.id,
+        question_id: q.id,
+        student_answer: selectedAnswers[q.id],
+        is_correct: selectedAnswers[q.id] === q.correct_answer,
+        answered_at: new Date().toISOString()
+      }));
+
+      const { error: answersError } = await supabase
+        .from('student_quiz_answers')
+        .insert(answersToInsert);
+
+      if (answersError) {
+        console.error('Error saving quiz answers:', answersError);
+      }
+
+      // Only mark quiz as completed if they passed
+      if (passed) {
+        const newCompletedQuizzes = new Set(completedQuizzes);
+        newCompletedQuizzes.add(currentLessonIndex);
+        setCompletedQuizzes(newCompletedQuizzes);
+
+        const quizScores = Array.from(completedQuizzes).reduce((acc, idx) => {
+          acc[idx] = 100;
+          return acc;
+        }, {} as { [key: number]: number });
+        quizScores[currentLessonIndex] = score;
+
+        await supabase
+          .from('student_course_enrollments')
+          .update({
+            progress: {
+              completed_lessons: Array.from(completedLessons),
+              total_lessons: course.lessons.length,
+              last_accessed_lesson: currentLessonIndex,
+              quiz_scores: quizScores,
+            }
+          })
+          .eq('student_id', session.student_id)
+          .eq('course_id', courseId);
+      }
     } catch (error) {
       console.error('Error submitting quiz:', error);
     }
@@ -251,6 +319,25 @@ export default function CoursePlayer({ courseId, onNavigate, onLogout }: CourseP
   const closeQuiz = () => {
     setShowQuiz(false);
     setShowResults(false);
+  };
+
+  const retakeQuiz = () => {
+    setShowResults(false);
+    setCurrentQuizIndex(0);
+    setSelectedAnswers({});
+    setQuizScore(0);
+    setQuizPassed(false);
+  };
+
+  const reviewLesson = () => {
+    setShowQuiz(false);
+    setShowResults(false);
+  };
+
+  const continueToNextLesson = () => {
+    setShowQuiz(false);
+    setShowResults(false);
+    nextLesson();
   };
 
   if (loading) {
@@ -399,11 +486,11 @@ export default function CoursePlayer({ courseId, onNavigate, onLogout }: CourseP
                 {getQuizForLesson(currentLessonIndex) && (
                   <button
                     onClick={startQuiz}
-                    disabled={!completedLessons.has(currentLessonIndex) || completedQuizzes.has(currentLessonIndex)}
+                    disabled={!completedLessons.has(currentLessonIndex)}
                     className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Brain className="h-5 w-5" />
-                    <span>{completedQuizzes.has(currentLessonIndex) ? 'Quiz Completed' : 'Take Quiz'}</span>
+                    <span>{completedQuizzes.has(currentLessonIndex) ? 'Quiz Passed ✓' : 'Take Quiz'}</span>
                   </button>
                 )}
               </div>
@@ -524,16 +611,26 @@ export default function CoursePlayer({ courseId, onNavigate, onLogout }: CourseP
               ) : (
                 <div className="p-6">
                   <div className="text-center mb-6">
-                    <div className="text-5xl font-bold text-blue-600 mb-2">
-                      {Math.round((Object.keys(selectedAnswers).filter(qId => {
-                        const q = quiz.questions.find(question => question.id === qId);
-                        return q && selectedAnswers[qId] === q.correct_answer;
-                      }).length / quiz.questions.length) * 100)}%
+                    <div className={`text-5xl font-bold mb-2 ${quizPassed ? 'text-green-600' : 'text-red-600'}`}>
+                      {quizScore}%
                     </div>
-                    <p className="text-gray-600">Your Score</p>
+                    <p className="text-gray-600 text-lg mb-2">Your Score</p>
+                    <div className={`inline-block px-4 py-2 rounded-full font-semibold ${
+                      quizPassed
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {quizPassed ? 'PASSED' : 'FAILED'}
+                    </div>
+                    <p className="text-gray-500 text-sm mt-2">
+                      {quizPassed
+                        ? `Great job! You scored above the ${PASSING_THRESHOLD}% passing threshold.`
+                        : `You need at least ${PASSING_THRESHOLD}% to pass. Review the lesson and try again.`
+                      }
+                    </p>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-4 mb-6">
                     {quiz.questions.map((q, idx) => {
                       const isCorrect = selectedAnswers[q.id] === q.correct_answer;
                       return (
@@ -575,12 +672,41 @@ export default function CoursePlayer({ courseId, onNavigate, onLogout }: CourseP
                     })}
                   </div>
 
-                  <button
-                    onClick={closeQuiz}
-                    className="mt-6 w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-                  >
-                    Close Quiz
-                  </button>
+                  {quizPassed ? (
+                    <div className="space-y-3">
+                      <button
+                        onClick={continueToNextLesson}
+                        disabled={currentLessonIndex === course.lessons.length - 1}
+                        className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <ChevronRight className="h-5 w-5" />
+                        <span>Continue to Next Lesson</span>
+                      </button>
+                      <button
+                        onClick={closeQuiz}
+                        className="w-full px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
+                      >
+                        Close Quiz
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <button
+                        onClick={retakeQuiz}
+                        className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center justify-center gap-2"
+                      >
+                        <Brain className="h-5 w-5" />
+                        <span>Retake Quiz</span>
+                      </button>
+                      <button
+                        onClick={reviewLesson}
+                        className="w-full px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium flex items-center justify-center gap-2"
+                      >
+                        <BookOpen className="h-5 w-5" />
+                        <span>Review Lesson</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
