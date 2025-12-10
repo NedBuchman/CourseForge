@@ -43,16 +43,16 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
               Access expert-created courses with interactive lessons, quizzes, and video content.
               Track your progress and achieve your learning goals.
             </p>
-            <div className="flex gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-stretch sm:items-center">
               <button
                 onClick={() => onNavigate('register')}
-                className="px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold text-lg shadow-lg"
+                className="px-6 sm:px-8 py-3 sm:py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold text-base sm:text-lg shadow-lg"
               >
                 Start Learning Free
               </button>
               <button
                 onClick={() => onNavigate('catalog')}
-                className="px-8 py-4 bg-white text-blue-600 rounded-lg hover:bg-gray-50 font-semibold text-lg shadow-lg border-2 border-blue-600"
+                className="px-6 sm:px-8 py-3 sm:py-4 bg-white text-blue-600 rounded-lg hover:bg-gray-50 font-semibold text-base sm:text-lg shadow-lg border-2 border-blue-600"
               >
                 Browse Courses
               </button>

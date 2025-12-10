@@ -148,31 +148,32 @@ export default function CourseCatalog({ onNavigate, onLogout }: CourseCatalogPro
                 </button>
               )}
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               {session ? (
                 <>
-                  <span className="text-sm text-gray-600">
+                  <span className="text-xs sm:text-sm text-gray-600 truncate max-w-[120px] sm:max-w-none">
                     {session.first_name} {session.last_name}
                   </span>
                   <button
                     onClick={onLogout}
-                    className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900"
+                    className="flex items-center gap-1 sm:gap-2 p-2 sm:px-4 sm:py-2 text-gray-700 hover:text-gray-900"
+                    title="Log Out"
                   >
                     <LogOut className="h-5 w-5" />
-                    <span>Log Out</span>
+                    <span className="hidden sm:inline">Log Out</span>
                   </button>
                 </>
               ) : (
                 <>
                   <button
                     onClick={() => onNavigate('login')}
-                    className="px-4 py-2 text-blue-600 hover:text-blue-700 font-medium"
+                    className="px-3 sm:px-4 py-2 text-blue-600 hover:text-blue-700 font-medium text-sm sm:text-base"
                   >
                     Log In
                   </button>
                   <button
                     onClick={() => onNavigate('login')}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                    className="px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm sm:text-base"
                   >
                     Sign Up
                   </button>

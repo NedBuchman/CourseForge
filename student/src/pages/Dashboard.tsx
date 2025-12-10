@@ -83,16 +83,17 @@ export default function Dashboard({ onNavigate, onLogout }: DashboardProps) {
               <BookOpen className="h-7 w-7 text-blue-600" />
               <span className="text-xl font-bold text-gray-900">CourseForge</span>
             </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <span className="text-xs sm:text-sm text-gray-600 truncate max-w-[120px] sm:max-w-none">
                 {session?.first_name} {session?.last_name}
               </span>
               <button
                 onClick={onLogout}
-                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900"
+                className="flex items-center gap-1 sm:gap-2 p-2 sm:px-4 sm:py-2 text-gray-700 hover:text-gray-900"
+                title="Log Out"
               >
                 <LogOut className="h-5 w-5" />
-                <span>Log Out</span>
+                <span className="hidden sm:inline">Log Out</span>
               </button>
             </div>
           </div>

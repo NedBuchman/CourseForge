@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, LogOut, ChevronLeft, ChevronRight, CheckCircle, PlayCircle, Brain, ChevronDown, ChevronUp, FileText } from 'lucide-react';
+import { BookOpen, LogOut, ChevronLeft, ChevronRight, CheckCircle, PlayCircle, Brain, ChevronDown, ChevronUp, FileText, Menu, X } from 'lucide-react';
 import { studentAuth } from '../lib/studentAuth';
 import { supabase } from '../lib/supabase';
 import LessonAIChat from '../components/LessonAIChat';
@@ -48,6 +48,7 @@ export default function LessonPlayer({ courseId, lessonIndex, onNavigate, onLogo
     watchPercentage: 0,
     completed: false
   });
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const session = studentAuth.getSession();
 
   useEffect(() => {
@@ -332,47 +333,79 @@ export default function LessonPlayer({ courseId, lessonIndex, onNavigate, onLogo
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b sticky top-0 z-10">
+      <nav className="bg-white shadow-sm border-b sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="lg:hidden p-2 text-gray-600 hover:text-gray-900"
+              >
+                <Menu className="h-6 w-6" />
+              </button>
               <button
                 onClick={() => onNavigate('dashboard')}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+                className="flex items-center gap-1 sm:gap-2 text-gray-600 hover:text-gray-900 flex-shrink-0"
               >
                 <ChevronLeft className="h-5 w-5" />
-                <span>Back</span>
+                <span className="hidden sm:inline">Back</span>
               </button>
-              <div className="h-6 w-px bg-gray-300" />
-              <div className="flex items-center gap-2">
-                <BookOpen className="h-6 w-6 text-blue-600" />
-                <span className="font-semibold text-gray-900">{course.title}</span>
+              <div className="h-6 w-px bg-gray-300 hidden sm:block flex-shrink-0" />
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 flex-shrink-0" />
+                <span className="font-semibold text-gray-900 text-sm sm:text-base truncate">{course.title}</span>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-sm">
-                <span className="text-gray-600">Progress: </span>
+            <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+              <div className="text-xs sm:text-sm">
+                <span className="text-gray-600 hidden sm:inline">Progress: </span>
                 <span className="font-semibold text-gray-900">{progress}%</span>
               </div>
               <button
                 onClick={onLogout}
-                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900"
+                className="flex items-center gap-1 sm:gap-2 p-2 sm:px-4 sm:py-2 text-gray-700 hover:text-gray-900"
+                title="Log Out"
               >
                 <LogOut className="h-5 w-5" />
+                <span className="hidden md:inline">Log Out</span>
               </button>
             </div>
           </div>
         </div>
       </nav>
 
-      <div className="flex max-w-7xl mx-auto">
-        <aside className="w-80 bg-white border-r min-h-screen p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Course Content</h3>
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      <div className="flex max-w-7xl mx-auto relative">
+        <aside className={`
+          fixed lg:static inset-y-0 left-0 z-40
+          w-80 bg-white border-r min-h-screen p-6
+          transform transition-transform duration-300 ease-in-out
+          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          overflow-y-auto
+        `}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-gray-900">Course Content</h3>
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="lg:hidden p-2 text-gray-600 hover:text-gray-900"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
           <div className="space-y-2">
             {course.lessons.map((lesson, index) => (
               <button
                 key={index}
-                onClick={() => navigateToLesson(index)}
+                onClick={() => {
+                  navigateToLesson(index);
+                  setIsMobileMenuOpen(false);
+                }}
                 className={`w-full text-left p-3 rounded-lg transition-colors ${
                   index === currentLessonIndex
                     ? 'bg-blue-50 border-2 border-blue-600'
@@ -397,18 +430,18 @@ export default function LessonPlayer({ courseId, lessonIndex, onNavigate, onLogo
           </div>
         </aside>
 
-        <main className="flex-1 p-8">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full lg:w-auto">
           <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-xl shadow-sm border p-8 mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <div className="text-sm text-gray-500 mb-1">
+            <div className="bg-white rounded-xl shadow-sm border p-4 sm:p-6 lg:p-8 mb-6">
+              <div className="flex items-start sm:items-center justify-between mb-4 gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs sm:text-sm text-gray-500 mb-1">
                     Lesson {currentLessonIndex + 1} of {course.lessons.length}
                   </div>
-                  <h2 className="text-3xl font-bold text-gray-900">{currentLesson.title}</h2>
+                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{currentLesson.title}</h2>
                 </div>
                 {completedLessons.has(currentLessonIndex) && (
-                  <CheckCircle className="h-8 w-8 text-green-600" />
+                  <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 flex-shrink-0" />
                 )}
               </div>
 
@@ -490,13 +523,13 @@ export default function LessonPlayer({ courseId, lessonIndex, onNavigate, onLogo
                 )}
               </div>
 
-              <div className="mt-6 flex gap-4">
+              <div className="mt-6 flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <button
                   onClick={() => markLessonComplete(currentLessonIndex)}
                   disabled={completedLessons.has(currentLessonIndex)}
-                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 sm:px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                 >
-                  <CheckCircle className="h-5 w-5" />
+                  <CheckCircle className="h-5 w-5 flex-shrink-0" />
                   <span>{completedLessons.has(currentLessonIndex) ? 'Completed' : 'Mark as Complete'}</span>
                 </button>
 
@@ -504,32 +537,32 @@ export default function LessonPlayer({ courseId, lessonIndex, onNavigate, onLogo
                   <button
                     onClick={startQuiz}
                     disabled={!completedLessons.has(currentLessonIndex)}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 sm:px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                   >
-                    <Brain className="h-5 w-5" />
+                    <Brain className="h-5 w-5 flex-shrink-0" />
                     <span>{completedQuizzes.has(currentLessonIndex) ? 'Quiz Passed ✓' : 'Take Quiz'}</span>
                   </button>
                 )}
               </div>
             </div>
 
-            <div className="flex justify-between">
+            <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0">
               <button
                 onClick={previousLesson}
                 disabled={currentLessonIndex === 0}
-                className="flex items-center gap-2 px-6 py-3 bg-white border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-white border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
               >
-                <ChevronLeft className="h-5 w-5" />
+                <ChevronLeft className="h-5 w-5 flex-shrink-0" />
                 <span>Previous Lesson</span>
               </button>
 
               <button
                 onClick={nextLesson}
                 disabled={currentLessonIndex === course.lessons.length - 1}
-                className="flex items-center gap-2 px-6 py-3 bg-white border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-white border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
               >
                 <span>Next Lesson</span>
-                <ChevronRight className="h-5 w-5" />
+                <ChevronRight className="h-5 w-5 flex-shrink-0" />
               </button>
             </div>
           </div>
