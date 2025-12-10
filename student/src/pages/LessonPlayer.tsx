@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BookOpen, LogOut, ChevronLeft, ChevronRight, CheckCircle, PlayCircle, Brain } from 'lucide-react';
 import { studentAuth } from '../lib/studentAuth';
 import { supabase } from '../lib/supabase';
+import LessonAIChat from '../components/LessonAIChat';
 
 interface LessonPlayerProps {
   courseId: string;
@@ -355,6 +356,13 @@ export default function LessonPlayer({ courseId, lessonIndex, onNavigate, onLogo
           </div>
         </main>
       </div>
+
+      <LessonAIChat
+        lessonTitle={currentLesson.title}
+        lessonContent={currentLesson.content}
+        supabaseUrl={import.meta.env.VITE_SUPABASE_URL}
+        supabaseAnonKey={import.meta.env.VITE_SUPABASE_ANON_KEY}
+      />
     </div>
   );
 }
