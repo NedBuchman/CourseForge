@@ -6,13 +6,18 @@ import LoginPage from './pages/LoginPage';
 import RegistrationPage from './pages/RegistrationPage';
 import Dashboard from './pages/Dashboard';
 import CourseCatalog from './pages/CourseCatalog';
-import CoursePlayer from './pages/CoursePlayer';
+import LessonPlayer from './pages/LessonPlayer';
+import QuizTaker from './pages/QuizTaker';
+import QuizResults from './pages/QuizResults';
 
-type Page = 'landing' | 'login' | 'register' | 'dashboard' | 'catalog' | 'course';
+type Page = 'landing' | 'login' | 'register' | 'dashboard' | 'catalog' | 'lesson' | 'quiz' | 'results';
 
 interface AppState {
   currentPage: Page;
   selectedCourseId?: string;
+  lessonIndex?: number;
+  quizId?: string;
+  attemptId?: string;
   isAuthenticated: boolean;
 }
 
@@ -29,17 +34,71 @@ function App() {
     }
   }, []);
 
-  const navigateTo = (page: Page, courseId?: string) => {
-    setAppState({
-      currentPage: page,
-      selectedCourseId: courseId,
-      isAuthenticated: studentAuth.isAuthenticated()
-    });
+  const navigateTo = (page: Page, courseIdOrLessonIndex?: string | number, quizIdOrAttemptId?: string) => {
+    if (page === 'lesson' && typeof courseIdOrLessonIndex === 'string') {
+      setAppState({
+        currentPage: page,
+        selectedCourseId: courseIdOrLessonIndex,
+        lessonIndex: 0,
+        isAuthenticated: studentAuth.isAuthenticated()
+      });
+    } else if (page === 'quiz') {
+      setAppState({
+        currentPage: page,
+        selectedCourseId: appState.selectedCourseId,
+        lessonIndex: typeof courseIdOrLessonIndex === 'number' ? courseIdOrLessonIndex : appState.lessonIndex,
+        quizId: quizIdOrAttemptId,
+        isAuthenticated: studentAuth.isAuthenticated()
+      });
+    } else if (page === 'results') {
+      setAppState({
+        currentPage: page,
+        selectedCourseId: appState.selectedCourseId,
+        lessonIndex: appState.lessonIndex,
+        attemptId: typeof courseIdOrLessonIndex === 'string' ? courseIdOrLessonIndex : quizIdOrAttemptId,
+        isAuthenticated: studentAuth.isAuthenticated()
+      });
+    } else {
+      setAppState({
+        currentPage: page,
+        selectedCourseId: typeof courseIdOrLessonIndex === 'string' ? courseIdOrLessonIndex : appState.selectedCourseId,
+        lessonIndex: typeof courseIdOrLessonIndex === 'number' ? courseIdOrLessonIndex : appState.lessonIndex,
+        isAuthenticated: studentAuth.isAuthenticated()
+      });
+    }
   };
 
   const handleLogout = () => {
     studentAuth.logout();
     setAppState({ currentPage: 'landing', isAuthenticated: false });
+  };
+
+  const handleLessonNavigation = (page: 'dashboard' | 'quiz', lessonIndex?: number, quizId?: string) => {
+    if (page === 'dashboard') {
+      navigateTo('dashboard');
+    } else if (page === 'quiz' && lessonIndex !== undefined && quizId) {
+      navigateTo('quiz', lessonIndex, quizId);
+    }
+  };
+
+  const handleQuizNavigation = (page: 'lesson' | 'results', attemptId?: string) => {
+    if (page === 'lesson') {
+      navigateTo('lesson', appState.selectedCourseId);
+    } else if (page === 'results' && attemptId) {
+      navigateTo('results', attemptId);
+    }
+  };
+
+  const handleResultsNavigation = (page: 'lesson' | 'quiz', lessonIndex?: number) => {
+    if (page === 'lesson' && lessonIndex !== undefined) {
+      setAppState(prev => ({
+        ...prev,
+        currentPage: 'lesson',
+        lessonIndex
+      }));
+    } else if (page === 'quiz') {
+      navigateTo('quiz', appState.lessonIndex, appState.quizId);
+    }
   };
 
   switch (appState.currentPage) {
@@ -57,10 +116,41 @@ function App() {
           <CourseCatalog onNavigate={navigateTo} onLogout={handleLogout} />
         </ErrorBoundary>
       );
-    case 'course':
-      return appState.selectedCourseId ? (
+    case 'lesson':
+      return appState.selectedCourseId !== undefined && appState.lessonIndex !== undefined ? (
         <ErrorBoundary>
-          <CoursePlayer courseId={appState.selectedCourseId} onNavigate={navigateTo} onLogout={handleLogout} />
+          <LessonPlayer
+            courseId={appState.selectedCourseId}
+            lessonIndex={appState.lessonIndex}
+            onNavigate={handleLessonNavigation}
+            onLogout={handleLogout}
+          />
+        </ErrorBoundary>
+      ) : (
+        <Dashboard onNavigate={navigateTo} onLogout={handleLogout} />
+      );
+    case 'quiz':
+      return appState.selectedCourseId && appState.quizId && appState.lessonIndex !== undefined ? (
+        <ErrorBoundary>
+          <QuizTaker
+            courseId={appState.selectedCourseId}
+            quizId={appState.quizId}
+            lessonIndex={appState.lessonIndex}
+            onNavigate={handleQuizNavigation}
+          />
+        </ErrorBoundary>
+      ) : (
+        <Dashboard onNavigate={navigateTo} onLogout={handleLogout} />
+      );
+    case 'results':
+      return appState.attemptId && appState.selectedCourseId && appState.lessonIndex !== undefined ? (
+        <ErrorBoundary>
+          <QuizResults
+            attemptId={appState.attemptId}
+            courseId={appState.selectedCourseId}
+            lessonIndex={appState.lessonIndex}
+            onNavigate={handleResultsNavigation}
+          />
         </ErrorBoundary>
       ) : (
         <Dashboard onNavigate={navigateTo} onLogout={handleLogout} />

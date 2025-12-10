@@ -4,7 +4,7 @@ import { studentAuth } from '../lib/studentAuth';
 import { supabase } from '../lib/supabase';
 
 interface DashboardProps {
-  onNavigate: (page: 'catalog' | 'course', courseId?: string) => void;
+  onNavigate: (page: 'catalog' | 'lesson', courseId?: string) => void;
   onLogout: () => void;
 }
 
@@ -211,7 +211,7 @@ export default function Dashboard({ onNavigate, onLogout }: DashboardProps) {
                   </div>
 
                   <button
-                    onClick={() => onNavigate('course', course.id)}
+                    onClick={() => onNavigate('lesson', course.id)}
                     className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
                   >
                     {course.progress === 0 ? 'Start Course' : 'Continue Learning'}
