@@ -20,7 +20,7 @@ interface Course {
 }
 
 interface Lesson {
-  lessonNumber: number;
+  lesson_number: number;
   title: string;
   content: string;
   video_url?: string;
