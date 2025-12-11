@@ -30,16 +30,25 @@ export default function QuizTaker({ courseId, quizId, lessonIndex, onNavigate }:
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(true);
-  const session = studentAuth.getSession();
+  const [session, setSession] = useState<any>(null);
 
   const PASSING_THRESHOLD = 60;
 
   useEffect(() => {
-    loadQuiz();
+    loadSession();
   }, [quizId]);
 
-  const loadQuiz = async () => {
-    if (!session) return;
+  const loadSession = async () => {
+    const currentSession = await studentAuth.getSession();
+    setSession(currentSession);
+    if (currentSession) {
+      loadQuiz(currentSession);
+    } else {
+      setLoading(false);
+    }
+  };
+
+  const loadQuiz = async (currentSession: any) => {
 
     try {
       const { data: quizData, error: quizError } = await supabase

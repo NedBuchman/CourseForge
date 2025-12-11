@@ -21,15 +21,23 @@ interface EnrolledCourse {
 export default function Dashboard({ onNavigate, onLogout }: DashboardProps) {
   const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([]);
   const [loading, setLoading] = useState(true);
-  const session = studentAuth.getSession();
+  const [session, setSession] = useState<any>(null);
 
   useEffect(() => {
-    loadEnrolledCourses();
+    loadSession();
   }, []);
 
-  const loadEnrolledCourses = async () => {
-    if (!session) return;
+  const loadSession = async () => {
+    const currentSession = await studentAuth.getSession();
+    setSession(currentSession);
+    if (currentSession) {
+      loadEnrolledCourses(currentSession);
+    } else {
+      setLoading(false);
+    }
+  };
 
+  const loadEnrolledCourses = async (currentSession: any) => {
     try {
       const { data: enrollments, error } = await supabase
         .from('student_course_enrollments')
@@ -45,7 +53,7 @@ export default function Dashboard({ onNavigate, onLogout }: DashboardProps) {
             lessons
           )
         `)
-        .eq('user_id', session.student_id);
+        .eq('user_id', currentSession.student_id);
 
       if (error) throw error;
 

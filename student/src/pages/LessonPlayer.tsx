@@ -49,16 +49,18 @@ export default function LessonPlayer({ courseId, lessonIndex, onNavigate, onLogo
     completed: false
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const session = studentAuth.getSession();
+  const [session, setSession] = useState<any>(null);
 
   useEffect(() => {
-    loadCourse();
+    loadSession();
   }, [courseId]);
 
   useEffect(() => {
     setCurrentLessonIndex(lessonIndex);
-    loadVideoForLesson(lessonIndex);
-  }, [lessonIndex]);
+    if (session) {
+      loadVideoForLesson(currentLessonIndex);
+    }
+  }, [lessonIndex, session]);
 
   useEffect(() => {
     if (session && courseId && currentLessonIndex >= 0) {
@@ -66,9 +68,17 @@ export default function LessonPlayer({ courseId, lessonIndex, onNavigate, onLogo
     }
   }, [currentLessonIndex, courseId, session]);
 
-  const loadCourse = async () => {
-    if (!session) return;
+  const loadSession = async () => {
+    const currentSession = await studentAuth.getSession();
+    setSession(currentSession);
+    if (currentSession) {
+      loadCourse(currentSession);
+    } else {
+      setLoading(false);
+    }
+  };
 
+  const loadCourse = async (currentSession: any) => {
     try {
       const [courseResponse, enrollmentResponse, quizzesResponse] = await Promise.all([
         supabase
@@ -79,7 +89,7 @@ export default function LessonPlayer({ courseId, lessonIndex, onNavigate, onLogo
         supabase
           .from('student_course_enrollments')
           .select('progress')
-          .eq('user_id', session.student_id)
+          .eq('user_id', currentSession.student_id)
           .eq('course_id', courseId)
           .maybeSingle(),
         supabase

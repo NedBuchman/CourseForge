@@ -38,13 +38,23 @@ export default function CourseCompletion({ courseId, onNavigate, onLogout }: Cou
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
   const certificateRef = useRef<HTMLDivElement>(null);
-  const session = studentAuth.getSession();
+  const [session, setSession] = useState<any>(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
     createConfetti();
-    loadCertificate();
+    loadSession();
   }, []);
+
+  const loadSession = async () => {
+    const currentSession = await studentAuth.getSession();
+    setSession(currentSession);
+    if (currentSession) {
+      loadCertificate(currentSession);
+    } else {
+      setLoading(false);
+    }
+  };
 
   const createConfetti = () => {
     const colors = ['#fbbf24', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6'];
@@ -67,9 +77,7 @@ export default function CourseCompletion({ courseId, onNavigate, onLogout }: Cou
     }, 4000);
   };
 
-  const loadCertificate = async () => {
-    if (!session) return;
-
+  const loadCertificate = async (currentSession: any) => {
     try {
       // Load course details
       const { data: courseData, error: courseError } = await supabase
@@ -85,7 +93,7 @@ export default function CourseCompletion({ courseId, onNavigate, onLogout }: Cou
       const { data: existingCert, error: certError } = await supabase
         .from('course_certificates')
         .select('*')
-        .eq('student_id', session.student_id)
+        .eq('student_id', currentSession.student_id)
         .eq('course_id', courseId)
         .maybeSingle();
 
@@ -95,7 +103,7 @@ export default function CourseCompletion({ courseId, onNavigate, onLogout }: Cou
         setCertificate(existingCert);
       } else {
         // Generate new certificate
-        await generateCertificate(courseData);
+        await generateCertificate(courseData, currentSession);
       }
     } catch (error) {
       console.error('Error loading certificate:', error);
@@ -104,11 +112,9 @@ export default function CourseCompletion({ courseId, onNavigate, onLogout }: Cou
     }
   };
 
-  const generateCertificate = async (courseData: Course) => {
-    if (!session) return;
-
+  const generateCertificate = async (courseData: Course, currentSession: any) => {
     const completedAt = new Date().toISOString();
-    const studentName = `${session.first_name} ${session.last_name}`;
+    const studentName = `${currentSession.first_name} ${currentSession.last_name}`;
 
     const certificateData = {
       studentName,
@@ -158,7 +164,7 @@ export default function CourseCompletion({ courseId, onNavigate, onLogout }: Cou
       const { data: newCert, error } = await supabase
         .from('course_certificates')
         .insert({
-          student_id: session.student_id,
+          student_id: currentSession.student_id,
           course_id: courseId,
           certificate_html: certificateHtml,
           certificate_data: certificateData,

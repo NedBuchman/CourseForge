@@ -46,16 +46,25 @@ export default function QuizResults({ attemptId, courseId, lessonIndex, onNaviga
   const [loading, setLoading] = useState(true);
   const [isLastLesson, setIsLastLesson] = useState(false);
   const [courseCompleted, setCourseCompleted] = useState(false);
-  const session = studentAuth.getSession();
+  const [session, setSession] = useState<any>(null);
 
   const PASSING_THRESHOLD = 60;
 
   useEffect(() => {
-    loadResults();
+    loadSession();
   }, [attemptId]);
 
-  const loadResults = async () => {
-    if (!session) return;
+  const loadSession = async () => {
+    const currentSession = await studentAuth.getSession();
+    setSession(currentSession);
+    if (currentSession) {
+      loadResults(currentSession);
+    } else {
+      setLoading(false);
+    }
+  };
+
+  const loadResults = async (currentSession: any) => {
 
     try {
       const { data: attemptData, error: attemptError } = await supabase
@@ -138,7 +147,7 @@ export default function QuizResults({ attemptId, courseId, lessonIndex, onNaviga
         const { data: attempts, error: attemptsError } = await supabase
           .from('student_quiz_attempts')
           .select('passed')
-          .eq('student_id', session.student_id)
+          .eq('student_id', currentSession.student_id)
           .eq('quiz_id', quiz.id)
           .order('created_at', { ascending: false })
           .limit(1);

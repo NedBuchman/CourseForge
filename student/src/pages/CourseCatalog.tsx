@@ -25,11 +25,17 @@ export default function CourseCatalog({ onNavigate, onLogout }: CourseCatalogPro
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [enrolling, setEnrolling] = useState<string | null>(null);
-  const session = studentAuth.getSession();
+  const [session, setSession] = useState<any>(null);
 
   useEffect(() => {
+    loadSession();
     loadCourses();
   }, []);
+
+  const loadSession = async () => {
+    const currentSession = await studentAuth.getSession();
+    setSession(currentSession);
+  };
 
   const loadCourses = async () => {
     setLoading(true);
@@ -49,11 +55,12 @@ export default function CourseCatalog({ onNavigate, onLogout }: CourseCatalogPro
 
       let enrolledCourseIds = new Set<string>();
 
-      if (session) {
+      const currentSession = await studentAuth.getSession();
+      if (currentSession) {
         const enrollmentsResponse = await supabase
           .from('student_course_enrollments')
           .select('course_id')
-          .eq('user_id', session.student_id);
+          .eq('user_id', currentSession.student_id);
 
         enrolledCourseIds = new Set(
           enrollmentsResponse.data?.map(e => e.course_id) || []
@@ -84,7 +91,7 @@ export default function CourseCatalog({ onNavigate, onLogout }: CourseCatalogPro
   };
 
   const handleEnroll = async (courseId: string) => {
-    const currentSession = studentAuth.getSession();
+    const currentSession = await studentAuth.getSession();
 
     if (!currentSession) {
       onNavigate('register', courseId);
@@ -115,6 +122,8 @@ export default function CourseCatalog({ onNavigate, onLogout }: CourseCatalogPro
           course.id === courseId ? { ...course, isEnrolled: true } : course
         )
       );
+
+      await loadSession();
     } catch (error) {
       console.error('Error enrolling:', error);
       alert('Failed to enroll in course');
