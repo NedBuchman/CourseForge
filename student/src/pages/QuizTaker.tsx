@@ -13,7 +13,7 @@ interface QuizTakerProps {
 interface QuizQuestion {
   id: string;
   question_text: string;
-  options: { [key: string]: string };
+  options: string[] | { [key: string]: string };
   correct_answer: string;
   explanation: string;
   order_index: number;
@@ -73,9 +73,22 @@ export default function QuizTaker({ courseId, quizId, lessonIndex, onNavigate }:
 
       if (questionsError) throw questionsError;
 
+      // Convert array options to object format with A, B, C, D keys
+      const normalizedQuestions = (questions || []).map(q => {
+        if (Array.isArray(q.options)) {
+          const labels = ['A', 'B', 'C', 'D', 'E', 'F'];
+          const optionsObj: { [key: string]: string } = {};
+          q.options.forEach((option: string, index: number) => {
+            optionsObj[labels[index]] = option;
+          });
+          return { ...q, options: optionsObj };
+        }
+        return q;
+      });
+
       setQuiz({
         ...quizData,
-        questions: questions || []
+        questions: normalizedQuestions
       });
     } catch (error) {
       console.error('Error loading quiz:', error);

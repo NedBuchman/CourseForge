@@ -28,7 +28,7 @@ interface AnswerSummary {
 interface QuizQuestion {
   id: string;
   question_text: string;
-  options: { [key: string]: string };
+  options: string[] | { [key: string]: string };
   correct_answer: string;
   explanation: string;
   order_index: number;
@@ -101,7 +101,19 @@ export default function QuizResults({ attemptId, courseId, lessonIndex, onNaviga
 
       if (questionsError) throw questionsError;
       if (questionsData) {
-        setQuestions(questionsData);
+        // Convert array options to object format with A, B, C, D keys
+        const normalizedQuestions = questionsData.map(q => {
+          if (Array.isArray(q.options)) {
+            const labels = ['A', 'B', 'C', 'D', 'E', 'F'];
+            const optionsObj: { [key: string]: string } = {};
+            q.options.forEach((option: string, index: number) => {
+              optionsObj[labels[index]] = option;
+            });
+            return { ...q, options: optionsObj };
+          }
+          return q;
+        });
+        setQuestions(normalizedQuestions);
       }
 
       const { data: courseData } = await supabase
