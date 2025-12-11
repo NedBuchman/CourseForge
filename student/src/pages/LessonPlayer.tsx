@@ -175,7 +175,7 @@ export default function LessonPlayer({ courseId, lessonIndex, onNavigate, onLogo
       const { data: trackingData } = await supabase
         .from('lesson_video_views')
         .select('*')
-        .eq('user_id', session.student_id)
+        .eq('student_id', session.student_id)
         .eq('course_id', courseId)
         .eq('lesson_index', lessonIdx)
         .maybeSingle();
