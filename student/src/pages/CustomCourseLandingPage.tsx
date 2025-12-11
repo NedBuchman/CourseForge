@@ -89,7 +89,7 @@ export default function CustomCourseLandingPage({
         const { data: enrollment } = await supabase
           .from('student_course_enrollments')
           .select('id')
-          .eq('user_id', currentSession.student_id)
+          .eq('user_id', currentSession.user_id)
           .eq('course_id', courseId)
           .maybeSingle();
 
@@ -114,8 +114,8 @@ export default function CustomCourseLandingPage({
       const { error: enrollError } = await supabase
         .from('student_course_enrollments')
         .insert({
-          student_id: session.student_id,
-          user_id: session.student_id,
+          student_id: session.user_id,
+          user_id: session.user_id,
           course_id: courseId,
           progress: {
             completed_lessons: [],

@@ -57,8 +57,8 @@ export default function RegistrationPage({ onNavigate, pendingEnrollmentCourseId
           const { error: enrollError } = await supabase
             .from('student_course_enrollments')
             .insert({
-              student_id: result.data.student_id,
-              user_id: result.data.student_id,
+              student_id: result.data.user_id,
+              user_id: result.data.user_id,
               course_id: pendingEnrollmentCourseId,
               progress: {
                 completed_lessons: [],

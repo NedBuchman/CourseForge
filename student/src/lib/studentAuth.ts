@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 
 export interface StudentSession {
-  student_id: string;
+  user_id: string;
   email: string;
   first_name: string;
   last_name: string;
@@ -38,7 +38,7 @@ export const studentAuth = {
       return {
         success: true,
         data: {
-          student_id: data.user.id,
+          user_id: data.user.id,
           email: data.user.email!,
           first_name: firstName,
           last_name: lastName,
@@ -71,7 +71,7 @@ export const studentAuth = {
       return {
         success: true,
         data: {
-          student_id: data.user.id,
+          user_id: data.user.id,
           email: data.user.email!,
           first_name: firstName,
           last_name: lastName,
@@ -92,7 +92,7 @@ export const studentAuth = {
     if (!session) return null;
 
     return {
-      student_id: session.user.id,
+      user_id: session.user.id,
       email: session.user.email!,
       first_name: session.user.user_metadata?.first_name || '',
       last_name: session.user.user_metadata?.last_name || '',
@@ -104,8 +104,8 @@ export const studentAuth = {
     return session !== null;
   },
 
-  async getStudentId(): Promise<string | null> {
+  async getUserId(): Promise<string | null> {
     const session = await this.getSession();
-    return session?.student_id || null;
+    return session?.user_id || null;
   },
 };

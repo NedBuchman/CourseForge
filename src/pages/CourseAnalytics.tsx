@@ -24,7 +24,7 @@ interface CourseAnalyticsProps {
   courseId: string;
   courseTitle: string;
   onBack: () => void;
-  onViewStudent: (studentId: string) => void;
+  onViewStudent: (userId: string) => void;
   onViewLesson: (lessonIndex: number) => void;
   onViewQuiz: (quizId: string) => void;
   onBackToCourses?: () => void;
@@ -67,7 +67,7 @@ interface QuizAnalytics {
 }
 
 interface StudentSummary {
-  student_id: string;
+  user_id: string;
   student_email: string;
   first_name: string;
   last_name: string;
@@ -472,7 +472,7 @@ export default function CourseAnalytics({
                     {strugglingStudents.map((student, index) => (
                       <div
                         key={index}
-                        onClick={() => onViewStudent(student.student_id)}
+                        onClick={() => onViewStudent(student.user_id)}
                         className="p-3 bg-red-50 rounded-lg hover:bg-red-100 transition-colors cursor-pointer border border-red-200"
                       >
                         <div className="flex items-center justify-between mb-1">
@@ -497,7 +497,7 @@ export default function CourseAnalytics({
                     {topPerformers.map((student, index) => (
                       <div
                         key={index}
-                        onClick={() => onViewStudent(student.student_id)}
+                        onClick={() => onViewStudent(student.user_id)}
                         className="p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors cursor-pointer border border-green-200"
                       >
                         <div className="flex items-center justify-between mb-1">
@@ -560,7 +560,7 @@ export default function CourseAnalytics({
                   ]}
                   data={students}
                   maxRows={10}
-                  onRowClick={(student) => onViewStudent(student.student_id)}
+                  onRowClick={(student) => onViewStudent(student.user_id)}
                 />
               </div>
             )}

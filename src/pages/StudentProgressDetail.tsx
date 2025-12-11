@@ -75,19 +75,19 @@ export default function StudentProgressDetail({
           .from('student_performance_summary')
           .select('*')
           .eq('course_id', courseId)
-          .eq('student_id', studentId)
+          .eq('user_id', studentId)
           .maybeSingle(),
         supabase
           .from('student_lesson_completions')
           .select('*')
           .eq('course_id', courseId)
-          .eq('student_id', studentId)
+          .eq('user_id', studentId)
           .order('lesson_index'),
         supabase
           .from('student_lesson_views')
           .select('*')
           .eq('course_id', courseId)
-          .eq('student_id', studentId)
+          .eq('user_id', studentId)
           .order('viewed_at'),
         supabase
           .from('student_quiz_attempts')
@@ -98,7 +98,7 @@ export default function StudentProgressDetail({
             )
           `)
           .eq('course_id', courseId)
-          .eq('student_id', studentId)
+          .eq('user_id', studentId)
           .order('started_at', { ascending: false })
       ]);
 

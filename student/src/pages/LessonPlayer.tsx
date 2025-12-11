@@ -89,7 +89,7 @@ export default function LessonPlayer({ courseId, lessonIndex, onNavigate, onLogo
         supabase
           .from('student_course_enrollments')
           .select('progress')
-          .eq('user_id', currentSession.student_id)
+          .eq('user_id', currentSession.user_id)
           .eq('course_id', courseId)
           .maybeSingle(),
         supabase
@@ -175,7 +175,7 @@ export default function LessonPlayer({ courseId, lessonIndex, onNavigate, onLogo
       const { data: trackingData } = await supabase
         .from('lesson_video_views')
         .select('*')
-        .eq('student_id', session.student_id)
+        .eq('student_id', session.user_id)
         .eq('course_id', courseId)
         .eq('lesson_index', lessonIdx)
         .maybeSingle();
@@ -210,7 +210,7 @@ export default function LessonPlayer({ courseId, lessonIndex, onNavigate, onLogo
       await supabase
         .from('lesson_video_views')
         .upsert({
-          student_id: session.student_id,
+          student_id: session.user_id,
           course_id: courseId,
           lesson_index: currentLessonIndex,
           started_at: new Date().toISOString(),
@@ -234,7 +234,7 @@ export default function LessonPlayer({ courseId, lessonIndex, onNavigate, onLogo
       await supabase
         .from('lesson_video_views')
         .upsert({
-          student_id: session.student_id,
+          student_id: session.user_id,
           course_id: courseId,
           lesson_index: currentLessonIndex,
           last_position: Math.floor(data.position),
@@ -266,13 +266,13 @@ export default function LessonPlayer({ courseId, lessonIndex, onNavigate, onLogo
             quiz_scores: {},
           }
         })
-        .eq('user_id', session.student_id)
+        .eq('user_id', session.user_id)
         .eq('course_id', courseId);
 
       await supabase
         .from('student_lesson_completions')
         .insert({
-          student_id: session.student_id,
+          student_id: session.user_id,
           course_id: courseId,
           lesson_index: lessonIdx,
         });

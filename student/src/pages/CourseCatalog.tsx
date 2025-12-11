@@ -59,7 +59,7 @@ export default function CourseCatalog({ onNavigate, onLogout }: CourseCatalogPro
         const enrollmentsResponse = await supabase
           .from('student_course_enrollments')
           .select('course_id')
-          .eq('user_id', currentSession.student_id);
+          .eq('user_id', currentSession.user_id);
 
         enrolledCourseIds = new Set(
           enrollmentsResponse.data?.map(e => e.course_id) || []
