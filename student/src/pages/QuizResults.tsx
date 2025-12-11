@@ -146,9 +146,9 @@ export default function QuizResults({ attemptId, courseId, lessonIndex, onNaviga
       // Get all quizzes for this course
       const { data: quizzes, error: quizzesError } = await supabase
         .from('quizzes')
-        .select('id, lesson_number')
+        .select('id, module_index')
         .eq('course_id', courseId)
-        .order('lesson_number');
+        .order('module_index');
 
       if (quizzesError || !quizzes || quizzes.length === 0) {
         return false;
