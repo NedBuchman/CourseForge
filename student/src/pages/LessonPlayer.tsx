@@ -79,7 +79,7 @@ export default function LessonPlayer({ courseId, lessonIndex, onNavigate, onLogo
         supabase
           .from('student_course_enrollments')
           .select('progress')
-          .eq('student_id', session.student_id)
+          .eq('user_id', session.student_id)
           .eq('course_id', courseId)
           .maybeSingle(),
         supabase
@@ -160,7 +160,7 @@ export default function LessonPlayer({ courseId, lessonIndex, onNavigate, onLogo
       const { data: trackingData } = await supabase
         .from('lesson_video_views')
         .select('*')
-        .eq('student_id', session.student_id)
+        .eq('user_id', session.student_id)
         .eq('course_id', courseId)
         .eq('lesson_index', lessonIdx)
         .maybeSingle();
@@ -251,7 +251,7 @@ export default function LessonPlayer({ courseId, lessonIndex, onNavigate, onLogo
             quiz_scores: {},
           }
         })
-        .eq('student_id', session.student_id)
+        .eq('user_id', session.student_id)
         .eq('course_id', courseId);
 
       await supabase

@@ -152,7 +152,7 @@ export default function QuizTaker({ courseId, quizId, lessonIndex, onNavigate }:
         const { data: enrollment } = await supabase
           .from('student_course_enrollments')
           .select('progress')
-          .eq('student_id', session.student_id)
+          .eq('user_id', session.student_id)
           .eq('course_id', courseId)
           .maybeSingle();
 
@@ -172,7 +172,7 @@ export default function QuizTaker({ courseId, quizId, lessonIndex, onNavigate }:
               quiz_scores: quizScores,
             }
           })
-          .eq('student_id', session.student_id)
+          .eq('user_id', session.student_id)
           .eq('course_id', courseId);
       }
 

@@ -45,7 +45,7 @@ export default function Dashboard({ onNavigate, onLogout }: DashboardProps) {
             lessons
           )
         `)
-        .eq('student_id', session.student_id);
+        .eq('user_id', session.student_id);
 
       if (error) throw error;
 
