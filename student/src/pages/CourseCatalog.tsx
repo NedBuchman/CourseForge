@@ -84,7 +84,12 @@ export default function CourseCatalog({ onNavigate, onLogout }: CourseCatalogPro
   };
 
   const handleEnroll = async (courseId: string) => {
-    if (!session) return;
+    const currentSession = studentAuth.getSession();
+
+    if (!currentSession) {
+      onNavigate('login');
+      return;
+    }
 
     setEnrolling(courseId);
 
@@ -92,7 +97,7 @@ export default function CourseCatalog({ onNavigate, onLogout }: CourseCatalogPro
       const { error } = await supabase
         .from('student_course_enrollments')
         .insert({
-          student_id: session.student_id,
+          student_id: currentSession.student_id,
           course_id: courseId,
           progress: {
             completed_lessons: [],
