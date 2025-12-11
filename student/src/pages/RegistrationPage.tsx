@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { BookOpen, Mail, Lock, User, AlertCircle } from 'lucide-react';
 import { studentAuth } from '../lib/studentAuth';
+import { supabase } from '../lib/supabase';
 
 interface RegistrationPageProps {
-  onNavigate: (page: 'dashboard' | 'login' | 'landing') => void;
+  onNavigate: (page: 'dashboard' | 'login' | 'landing' | 'lesson', courseId?: string) => void;
+  pendingEnrollmentCourseId?: string;
 }
 
-export default function RegistrationPage({ onNavigate }: RegistrationPageProps) {
+export default function RegistrationPage({ onNavigate, pendingEnrollmentCourseId }: RegistrationPageProps) {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -40,8 +42,46 @@ export default function RegistrationPage({ onNavigate }: RegistrationPageProps) 
       formData.lastName
     );
 
-    if (result.success) {
-      onNavigate('dashboard');
+    if (result.success && result.data) {
+      // If there's a pending course enrollment, enroll the user
+      if (pendingEnrollmentCourseId) {
+        try {
+          // Get course details to populate enrollment
+          const { data: courseData } = await supabase
+            .from('courses')
+            .select('lessons')
+            .eq('id', pendingEnrollmentCourseId)
+            .single();
+
+          // Enroll the student in the course
+          const { error: enrollError } = await supabase
+            .from('student_course_enrollments')
+            .insert({
+              student_id: result.data.student_id,
+              user_id: result.data.student_id,
+              course_id: pendingEnrollmentCourseId,
+              progress: {
+                completed_lessons: [],
+                total_lessons: courseData?.lessons?.length || 0,
+                last_accessed_lesson: null,
+                quiz_scores: {},
+              },
+            });
+
+          if (enrollError) {
+            console.error('Auto-enrollment error:', enrollError);
+          }
+
+          // Navigate to the course lesson player
+          onNavigate('lesson', pendingEnrollmentCourseId);
+        } catch (error) {
+          console.error('Error during auto-enrollment:', error);
+          // Still navigate to dashboard if enrollment fails
+          onNavigate('dashboard');
+        }
+      } else {
+        onNavigate('dashboard');
+      }
     } else {
       setError(result.error || 'Registration failed');
     }

@@ -20,6 +20,7 @@ interface AppState {
   quizId?: string;
   attemptId?: string;
   isAuthenticated: boolean;
+  pendingEnrollmentCourseId?: string;
 }
 
 function App() {
@@ -48,7 +49,8 @@ function App() {
         currentPage: page,
         selectedCourseId: courseIdOrLessonIndex,
         lessonIndex: 0,
-        isAuthenticated
+        isAuthenticated,
+        pendingEnrollmentCourseId: undefined // Clear pending enrollment
       });
     } else if (page === 'quiz') {
       setAppState({
@@ -77,7 +79,11 @@ function App() {
         currentPage: page,
         selectedCourseId: typeof courseIdOrLessonIndex === 'string' ? courseIdOrLessonIndex : appState.selectedCourseId,
         lessonIndex: typeof courseIdOrLessonIndex === 'number' ? courseIdOrLessonIndex : appState.lessonIndex,
-        isAuthenticated
+        isAuthenticated,
+        // Keep pending enrollment when going to register/login
+        pendingEnrollmentCourseId: (page === 'register' || page === 'login') && typeof courseIdOrLessonIndex === 'string'
+          ? courseIdOrLessonIndex
+          : (page === 'register' || page === 'login' ? appState.pendingEnrollmentCourseId : undefined)
       });
     }
   };
@@ -119,9 +125,9 @@ function App() {
     case 'landing':
       return <LandingPage onNavigate={navigateTo} />;
     case 'login':
-      return <LoginPage onNavigate={navigateTo} />;
+      return <LoginPage onNavigate={navigateTo} pendingEnrollmentCourseId={appState.pendingEnrollmentCourseId} />;
     case 'register':
-      return <RegistrationPage onNavigate={navigateTo} />;
+      return <RegistrationPage onNavigate={navigateTo} pendingEnrollmentCourseId={appState.pendingEnrollmentCourseId} />;
     case 'dashboard':
       return <Dashboard onNavigate={navigateTo} onLogout={handleLogout} />;
     case 'catalog':

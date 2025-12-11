@@ -4,7 +4,7 @@ import { studentAuth } from '../lib/studentAuth';
 import { supabase } from '../lib/supabase';
 
 interface CourseCatalogProps {
-  onNavigate: (page: 'landing' | 'login' | 'dashboard' | 'lesson', courseId?: string) => void;
+  onNavigate: (page: 'landing' | 'login' | 'register' | 'dashboard' | 'lesson', courseId?: string) => void;
   onLogout: () => void;
 }
 
@@ -87,7 +87,7 @@ export default function CourseCatalog({ onNavigate, onLogout }: CourseCatalogPro
     const currentSession = studentAuth.getSession();
 
     if (!currentSession) {
-      onNavigate('login');
+      onNavigate('register', courseId);
       return;
     }
 
@@ -280,10 +280,10 @@ export default function CourseCatalog({ onNavigate, onLogout }: CourseCatalogPro
 
                   {!session ? (
                     <button
-                      onClick={() => onNavigate('login')}
+                      onClick={() => onNavigate('register', course.id)}
                       className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
                     >
-                      Login to Enroll
+                      Sign Up to Enroll
                     </button>
                   ) : course.isEnrolled ? (
                     <button

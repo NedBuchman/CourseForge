@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { BookOpen, Mail, Lock, AlertCircle } from 'lucide-react';
 import { studentAuth } from '../lib/studentAuth';
+import { supabase } from '../lib/supabase';
 
 interface LoginPageProps {
-  onNavigate: (page: 'dashboard' | 'register' | 'landing') => void;
+  onNavigate: (page: 'dashboard' | 'register' | 'landing' | 'lesson', courseId?: string) => void;
+  pendingEnrollmentCourseId?: string;
 }
 
-export default function LoginPage({ onNavigate }: LoginPageProps) {
+export default function LoginPage({ onNavigate, pendingEnrollmentCourseId }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -19,8 +21,57 @@ export default function LoginPage({ onNavigate }: LoginPageProps) {
 
     const result = await studentAuth.login(email, password);
 
-    if (result.success) {
-      onNavigate('dashboard');
+    if (result.success && result.data) {
+      // If there's a pending course enrollment, enroll the user
+      if (pendingEnrollmentCourseId) {
+        try {
+          // Check if already enrolled
+          const { data: existingEnrollment } = await supabase
+            .from('student_course_enrollments')
+            .select('id')
+            .eq('student_id', result.data.student_id)
+            .eq('course_id', pendingEnrollmentCourseId)
+            .maybeSingle();
+
+          // Only enroll if not already enrolled
+          if (!existingEnrollment) {
+            // Get course details to populate enrollment
+            const { data: courseData } = await supabase
+              .from('courses')
+              .select('lessons')
+              .eq('id', pendingEnrollmentCourseId)
+              .single();
+
+            // Enroll the student in the course
+            const { error: enrollError } = await supabase
+              .from('student_course_enrollments')
+              .insert({
+                student_id: result.data.student_id,
+                user_id: result.data.student_id,
+                course_id: pendingEnrollmentCourseId,
+                progress: {
+                  completed_lessons: [],
+                  total_lessons: courseData?.lessons?.length || 0,
+                  last_accessed_lesson: null,
+                  quiz_scores: {},
+                },
+              });
+
+            if (enrollError) {
+              console.error('Auto-enrollment error:', enrollError);
+            }
+          }
+
+          // Navigate to the course lesson player
+          onNavigate('lesson', pendingEnrollmentCourseId);
+        } catch (error) {
+          console.error('Error during auto-enrollment:', error);
+          // Still navigate to dashboard if enrollment fails
+          onNavigate('dashboard');
+        }
+      } else {
+        onNavigate('dashboard');
+      }
     } else {
       setError(result.error || 'Login failed');
     }
