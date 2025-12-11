@@ -235,15 +235,9 @@ export default function QuizResults({ attemptId, courseId, lessonIndex, onNaviga
   };
 
   const continueToNextLesson = () => {
-    console.log('🔘 Button clicked!');
-    console.log('  isLastLesson:', isLastLesson);
-    console.log('  courseCompleted:', courseCompleted);
-
     if (isLastLesson && courseCompleted) {
-      console.log('  ➡️ Navigating to completion page');
       onNavigate('completion');
     } else {
-      console.log('  ➡️ Navigating to next lesson:', lessonIndex + 1);
       onNavigate('lesson', lessonIndex + 1);
     }
   };

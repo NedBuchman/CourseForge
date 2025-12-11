@@ -43,7 +43,6 @@ function App() {
   }, []);
 
   const navigateTo = async (page: Page, courseIdOrLessonIndex?: string | number, quizIdOrAttemptId?: string) => {
-    console.log('🚀 navigateTo called:', { page, courseIdOrLessonIndex, quizIdOrAttemptId });
     const isAuthenticated = await studentAuth.isAuthenticated();
 
     if (page === 'lesson' && typeof courseIdOrLessonIndex === 'string') {
@@ -112,20 +111,15 @@ function App() {
   };
 
   const handleResultsNavigation = (page: 'lesson' | 'quiz' | 'completion', lessonIndex?: number) => {
-    console.log('📍 handleResultsNavigation called with page:', page, 'lessonIndex:', lessonIndex);
-
     if (page === 'lesson' && lessonIndex !== undefined) {
-      console.log('  ➡️ Navigating to lesson', lessonIndex);
       setAppState(prev => ({
         ...prev,
         currentPage: 'lesson',
         lessonIndex
       }));
     } else if (page === 'quiz') {
-      console.log('  ➡️ Navigating to quiz');
       navigateTo('quiz', appState.lessonIndex, appState.quizId);
     } else if (page === 'completion') {
-      console.log('  ➡️ Navigating to completion');
       navigateTo('completion');
     }
   };

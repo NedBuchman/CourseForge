@@ -181,32 +181,49 @@ export default function CourseCompletion({ courseId, onNavigate, onLogout }: Cou
   };
 
   const handlePrint = () => {
-    if (certificateRef.current) {
-      const printWindow = window.open('', '', 'width=900,height=700');
-      if (printWindow) {
-        printWindow.document.write(`
-          <html>
-            <head>
-              <title>Course Certificate</title>
-              <style>
-                body { margin: 0; padding: 20px; }
-                @media print {
-                  body { margin: 0; padding: 0; }
-                  @page { margin: 0; }
-                }
-              </style>
-            </head>
-            <body>
-              ${certificate?.certificate_html || ''}
-            </body>
-          </html>
-        `);
-        printWindow.document.close();
-        setTimeout(() => {
-          printWindow.print();
-          printWindow.close();
-        }, 250);
-      }
+    console.log('🖨️ Print button clicked');
+    console.log('  certificateRef.current:', certificateRef.current);
+    console.log('  certificate:', certificate);
+    console.log('  certificate_html length:', certificate?.certificate_html?.length);
+
+    if (!certificate || !certificate.certificate_html) {
+      console.error('❌ No certificate or certificate_html available');
+      alert('Certificate not available. Please wait for it to load.');
+      return;
+    }
+
+    const printWindow = window.open('', '', 'width=900,height=700');
+    console.log('  printWindow opened:', !!printWindow);
+
+    if (printWindow) {
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>Course Certificate</title>
+            <style>
+              body { margin: 0; padding: 20px; }
+              @media print {
+                body { margin: 0; padding: 0; }
+                @page { margin: 0; }
+              }
+            </style>
+          </head>
+          <body>
+            ${certificate.certificate_html}
+          </body>
+        </html>
+      `;
+
+      console.log('  Writing HTML content (length:', htmlContent.length, ')');
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+
+      setTimeout(() => {
+        console.log('  Triggering print dialog');
+        printWindow.print();
+      }, 500);
     }
   };
 
