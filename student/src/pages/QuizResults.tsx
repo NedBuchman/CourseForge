@@ -143,11 +143,12 @@ export default function QuizResults({ attemptId, courseId, lessonIndex, onNaviga
     if (!session) return false;
 
     try {
-      // Get all quizzes for this course
+      // Get all approved quizzes for this course
       const { data: quizzes, error: quizzesError } = await supabase
         .from('quizzes')
         .select('id, module_index')
         .eq('course_id', courseId)
+        .eq('approved', true)
         .order('module_index');
 
       if (quizzesError || !quizzes || quizzes.length === 0) {
