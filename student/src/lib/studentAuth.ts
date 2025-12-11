@@ -21,7 +21,6 @@ export const studentAuth = {
         password,
         options: {
           data: {
-            role: 'student',
             first_name: firstName,
             last_name: lastName,
           },
@@ -64,22 +63,6 @@ export const studentAuth = {
 
       if (!data.user) {
         return { success: false, error: 'Invalid email or password' };
-      }
-
-      const { data: roleData, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', data.user.id)
-        .maybeSingle();
-
-      if (roleError) {
-        await supabase.auth.signOut();
-        return { success: false, error: 'Unable to verify user role. Please contact support.' };
-      }
-
-      if (!roleData || roleData.role !== 'student') {
-        await supabase.auth.signOut();
-        return { success: false, error: 'This login is for students only. Course creators should use the creator login portal.' };
       }
 
       const firstName = data.user.user_metadata?.first_name || '';
