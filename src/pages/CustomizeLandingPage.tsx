@@ -161,7 +161,7 @@ export default function CustomizeLandingPage({
     setGenerationProgress(0);
 
     try {
-      let heroImageUrl: string | null = null;
+      let heroImageUrl: string | null | undefined = undefined;
 
       if (heroImage) {
         setGenerationStatus('Uploading hero image...');
@@ -180,6 +180,9 @@ export default function CustomizeLandingPage({
 
         if (uploadError) {
           console.error('Hero image upload error:', uploadError);
+          alert('Failed to upload hero image. Please try again.');
+          setIsGenerating(false);
+          return;
         } else {
           const { data } = supabase.storage
             .from('course-logos')
@@ -187,6 +190,8 @@ export default function CustomizeLandingPage({
 
           heroImageUrl = data.publicUrl;
         }
+      } else if (heroImagePreview) {
+        heroImageUrl = heroImagePreview;
       }
 
       setGenerationStatus('Saving landing page configuration...');
@@ -210,40 +215,51 @@ export default function CustomizeLandingPage({
         ? `${publishUrl.trim()}/student-login`
         : null;
 
+      const updateData: any = {
+        course_id: courseId,
+        course_headline: courseHeadline,
+        value_proposition: valueProposition,
+        audience_description: audienceDescription,
+        instructor_bio: instructorBio || null,
+        page_style: pageStyle,
+        primary_color: primaryColor,
+        secondary_color: secondaryColor,
+        cta_button_text: ctaButtonText,
+        pricing_info: pricingInfo || null,
+        testimonials: testimonials || null,
+        special_message: specialMessage || null,
+        course_benefits: benefits.length > 0 ? benefits : null,
+        publish_url: publishUrl.trim() || null,
+        student_login_url: studentLoginUrl,
+        updated_at: new Date().toISOString()
+      };
+
+      if (heroImageUrl !== undefined) {
+        updateData.hero_image_url = heroImageUrl;
+      }
+
       const { error: configError } = await supabase
         .from('landing_page_configs')
-        .upsert({
-          course_id: courseId,
-          course_headline: courseHeadline,
-          value_proposition: valueProposition,
-          audience_description: audienceDescription,
-          instructor_bio: instructorBio || null,
-          page_style: pageStyle,
-          primary_color: primaryColor,
-          secondary_color: secondaryColor,
-          hero_image_url: heroImageUrl,
-          cta_button_text: ctaButtonText,
-          pricing_info: pricingInfo || null,
-          testimonials: testimonials || null,
-          special_message: specialMessage || null,
-          course_benefits: benefits.length > 0 ? benefits : null,
-          publish_url: publishUrl.trim() || null,
-          student_login_url: studentLoginUrl,
-          updated_at: new Date().toISOString()
-        }, {
+        .upsert(updateData, {
           onConflict: 'course_id'
         });
 
       if (configError) {
         console.error('Error saving landing page config:', configError);
+        alert('Failed to save landing page configuration. Please try again.');
+        setIsGenerating(false);
+        return;
       }
 
       setGenerationStatus('Complete!');
       setGenerationProgress(100);
 
-      onComplete();
+      setTimeout(() => {
+        onComplete();
+      }, 500);
     } catch (err) {
       console.error('Error generating landing page:', err);
+      alert('An error occurred. Please try again.');
       setIsGenerating(false);
     }
   };
@@ -687,7 +703,7 @@ export default function CustomizeLandingPage({
                     Custom colors make your landing page stand out! They'll be applied to the header gradient, titles, badges, and call-to-action buttons.
                   </p>
                 </div>
-                <div className="grid md:grid-cols-2 gap-6">
+                <div className="grid md:grid-cols-2 gap-6 mb-6">
                   <div className="bg-slate-50 p-5 rounded-xl border-2 border-slate-200">
                     <label className="block text-sm font-semibold text-slate-700 mb-3">Primary Color</label>
                     <div className="flex items-center gap-4">
@@ -710,6 +726,34 @@ export default function CustomizeLandingPage({
                         className="w-16 h-16 border-3 border-slate-300 rounded-lg cursor-pointer"
                       />
                       <span className="font-mono text-xl font-bold text-slate-900">{secondaryColor}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl border-2 p-6" style={{ borderColor: `${primaryColor}40` }}>
+                  <h4 className="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
+                    <span className="text-lg">👁️</span> Live Color Preview
+                  </h4>
+                  <div
+                    className="rounded-lg p-4 mb-3"
+                    style={{
+                      background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
+                    }}
+                  >
+                    <p className="text-white font-semibold text-center">Header Gradient</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 rounded-lg text-center" style={{ backgroundColor: primaryColor }}>
+                      <p className="text-white font-semibold text-sm">Primary Badge</p>
+                    </div>
+                    <div
+                      className="p-3 rounded-lg border-l-4"
+                      style={{
+                        backgroundColor: `${secondaryColor}10`,
+                        borderLeftColor: secondaryColor
+                      }}
+                    >
+                      <p className="text-sm font-semibold" style={{ color: secondaryColor }}>Benefit Card</p>
                     </div>
                   </div>
                 </div>
@@ -740,20 +784,34 @@ export default function CustomizeLandingPage({
                     />
                   </label>
                 ) : (
-                  <div className="border-2 border-slate-200 rounded-xl p-4 flex items-center gap-4">
-                    <img src={heroImagePreview} alt="Hero preview" className="w-32 h-32 object-cover rounded-lg" />
-                    <div className="flex-1">
-                      <p className="font-semibold text-slate-900 mb-2">Hero Image Preview</p>
-                      <p className="text-sm text-slate-600 mb-3">This image will appear at the top of your landing page</p>
-                      <label className="inline-block px-4 py-2 bg-slate-600 text-white rounded-lg font-semibold cursor-pointer hover:bg-slate-700 transition-colors text-sm">
-                        Change Image
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleHeroImageSelect}
-                          className="hidden"
-                        />
-                      </label>
+                  <div className="space-y-4">
+                    <div className="border-2 border-slate-200 rounded-xl p-4 flex items-center gap-4 bg-slate-50">
+                      <img src={heroImagePreview} alt="Hero preview" className="w-32 h-32 object-cover rounded-lg border-2 border-slate-300" />
+                      <div className="flex-1">
+                        <p className="font-semibold text-slate-900 mb-2">Hero Image Preview</p>
+                        <p className="text-sm text-slate-600 mb-3">This image will appear in the header and hero section</p>
+                        <label className="inline-block px-4 py-2 bg-slate-600 text-white rounded-lg font-semibold cursor-pointer hover:bg-slate-700 transition-colors text-sm">
+                          Change Image
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleHeroImageSelect}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    <div
+                      className="rounded-lg p-4"
+                      style={{
+                        background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <img src={heroImagePreview} alt="Logo preview" className="h-10 w-10 object-contain rounded bg-white/20" />
+                        <span className="text-white font-bold text-lg">How it will look in the header</span>
+                      </div>
                     </div>
                   </div>
                 )}
