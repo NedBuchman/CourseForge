@@ -677,11 +677,16 @@ export default function CustomizeLandingPage({
 
               <div>
                 <label className="block text-lg font-bold text-slate-900 mb-2">
-                  Color Scheme
+                  Color Scheme <span className="text-blue-600 text-base">(Highly Recommended)</span>
                 </label>
-                <p className="text-slate-600 mb-4 text-sm">
+                <p className="text-slate-600 mb-2 text-sm">
                   Choose your brand colors. These will be used for buttons, headers, and accents throughout the page.
                 </p>
+                <div className="bg-blue-50 border-l-4 border-blue-600 p-3 mb-4 rounded">
+                  <p className="text-blue-900 text-sm font-semibold">
+                    Custom colors make your landing page stand out! They'll be applied to the header gradient, titles, badges, and call-to-action buttons.
+                  </p>
+                </div>
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="bg-slate-50 p-5 rounded-xl border-2 border-slate-200">
                     <label className="block text-sm font-semibold text-slate-700 mb-3">Primary Color</label>
@@ -712,11 +717,16 @@ export default function CustomizeLandingPage({
 
               <div>
                 <label className="block text-lg font-bold text-slate-900 mb-2">
-                  Hero Image or Logo
+                  Hero Image or Logo <span className="text-blue-600 text-base">(Highly Recommended)</span>
                 </label>
-                <p className="text-slate-600 mb-4 text-sm">
+                <p className="text-slate-600 mb-2 text-sm">
                   Upload an image for the top of your landing page. This could be a course banner, your logo, or a relevant photo.
                 </p>
+                <div className="bg-blue-50 border-l-4 border-blue-600 p-3 mb-4 rounded">
+                  <p className="text-blue-900 text-sm font-semibold">
+                    Your logo will appear in the header and hero section of your landing page, making it more professional and branded!
+                  </p>
+                </div>
                 {!heroImagePreview ? (
                   <label className="block border-3 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors cursor-pointer bg-slate-50">
                     <Upload className="w-12 h-12 text-slate-400 mx-auto mb-3" />

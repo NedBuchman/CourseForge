@@ -192,27 +192,42 @@ export default function CustomCourseLandingPage({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b sticky top-0 z-10">
+    <div className="min-h-screen" style={{ backgroundColor: `${landingConfig.primary_color}08` }}>
+      <nav
+        className="shadow-sm border-b sticky top-0 z-10"
+        style={{
+          background: `linear-gradient(135deg, ${landingConfig.primary_color}, ${landingConfig.secondary_color})`
+        }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
-                <img
-                  src="/courseforge-logo.svg"
-                  alt="CourseForge"
-                  className="h-8 w-8"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                  }}
-                />
-                <BookOpen className="h-7 w-7 hidden" style={{ color: landingConfig?.primary_color || '#2563eb' }} />
-                <span className="text-xl font-bold text-gray-900">CourseForge</span>
+                {landingConfig.hero_image_url ? (
+                  <img
+                    src={landingConfig.hero_image_url}
+                    alt="Course Logo"
+                    className="h-10 w-10 object-contain rounded"
+                  />
+                ) : (
+                  <>
+                    <img
+                      src="/courseforge-logo.svg"
+                      alt="CourseForge"
+                      className="h-8 w-8"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                    <BookOpen className="h-7 w-7 text-white hidden" />
+                  </>
+                )}
+                <span className="text-xl font-bold text-white">CourseForge</span>
               </div>
               <button
                 onClick={() => onNavigate('catalog')}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium"
+                className="flex items-center gap-2 text-white/90 hover:text-white font-medium"
               >
                 <ArrowLeft className="h-5 w-5" />
                 <span className="hidden sm:inline">Back to Catalog</span>
@@ -221,12 +236,12 @@ export default function CustomCourseLandingPage({
             <div className="flex items-center gap-2 sm:gap-4">
               {session ? (
                 <>
-                  <span className="text-xs sm:text-sm text-gray-600 truncate max-w-[120px] sm:max-w-none">
+                  <span className="text-xs sm:text-sm text-white/90 truncate max-w-[120px] sm:max-w-none">
                     {session.first_name} {session.last_name}
                   </span>
                   <button
                     onClick={onLogout}
-                    className="flex items-center gap-1 sm:gap-2 p-2 sm:px-4 sm:py-2 text-gray-700 hover:text-gray-900"
+                    className="flex items-center gap-1 sm:gap-2 p-2 sm:px-4 sm:py-2 text-white/90 hover:text-white"
                     title="Log Out"
                   >
                     <LogOut className="h-5 w-5" />
@@ -237,13 +252,13 @@ export default function CustomCourseLandingPage({
                 <>
                   <button
                     onClick={() => onNavigate('login')}
-                    className="px-3 sm:px-4 py-2 text-blue-600 hover:text-blue-700 font-medium text-sm sm:text-base"
+                    className="px-3 sm:px-4 py-2 text-white/90 hover:text-white font-medium text-sm sm:text-base"
                   >
                     Log In
                   </button>
                   <button
                     onClick={() => onNavigate('register')}
-                    className="px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm sm:text-base"
+                    className="px-3 sm:px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg font-medium text-sm sm:text-base backdrop-blur-sm"
                   >
                     Sign Up
                   </button>
@@ -255,13 +270,21 @@ export default function CustomCourseLandingPage({
       </nav>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+        <div
+          className="bg-white rounded-2xl shadow-xl overflow-hidden border-2"
+          style={{ borderColor: `${landingConfig.primary_color}30` }}
+        >
           {landingConfig.hero_image_url && (
-            <div className="w-full h-64 md:h-96 overflow-hidden bg-gray-100">
+            <div
+              className="w-full h-64 md:h-96 overflow-hidden relative"
+              style={{
+                background: `linear-gradient(135deg, ${landingConfig.primary_color}20, ${landingConfig.secondary_color}20)`
+              }}
+            >
               <img
                 src={landingConfig.hero_image_url}
                 alt={course.title}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
             </div>
           )}
@@ -269,31 +292,44 @@ export default function CustomCourseLandingPage({
           <div className="p-8 md:p-12">
             <div className="mb-8">
               <span
-                className="inline-block px-3 py-1 text-sm font-medium rounded-full mb-4"
+                className="inline-block px-4 py-2 text-sm font-semibold rounded-full mb-4 shadow-sm"
                 style={{
-                  backgroundColor: `${landingConfig.primary_color}20`,
-                  color: landingConfig.primary_color,
+                  backgroundColor: landingConfig.primary_color,
+                  color: 'white',
                 }}
               >
                 {course.difficulty_level}
               </span>
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+              <h1
+                className="text-4xl md:text-5xl font-bold mb-4"
+                style={{ color: landingConfig.primary_color }}
+              >
                 {landingConfig.course_headline || course.title}
               </h1>
-              <p className="text-xl text-gray-600 leading-relaxed">
+              <p className="text-xl text-gray-700 leading-relaxed">
                 {landingConfig.value_proposition}
               </p>
             </div>
 
             <div className="grid md:grid-cols-2 gap-8 mb-8">
               <div>
-                <h2 className="text-2xl font-semibold text-gray-900 mb-4">Who is this for?</h2>
+                <h2
+                  className="text-2xl font-semibold mb-4"
+                  style={{ color: landingConfig.primary_color }}
+                >
+                  Who is this for?
+                </h2>
                 <p className="text-gray-700 leading-relaxed">
                   {landingConfig.audience_description}
                 </p>
               </div>
               <div>
-                <h2 className="text-2xl font-semibold text-gray-900 mb-4">Course Details</h2>
+                <h2
+                  className="text-2xl font-semibold mb-4"
+                  style={{ color: landingConfig.primary_color }}
+                >
+                  Course Details
+                </h2>
                 <div className="space-y-2 text-gray-700">
                   <p><span className="font-medium">Duration:</span> {course.duration}</p>
                   <p><span className="font-medium">Lessons:</span> {course.lessons?.length || 0}</p>
@@ -304,46 +340,86 @@ export default function CustomCourseLandingPage({
 
             {landingConfig.course_benefits && landingConfig.course_benefits.length > 0 && (
               <div className="mb-8">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-4">What you'll learn</h2>
-                <ul className="grid md:grid-cols-2 gap-3">
+                <h2
+                  className="text-2xl font-semibold mb-4"
+                  style={{ color: landingConfig.primary_color }}
+                >
+                  What you'll learn
+                </h2>
+                <div className="grid md:grid-cols-2 gap-4">
                   {landingConfig.course_benefits.map((benefit, index) => (
-                    <li key={index} className="flex items-start gap-3">
+                    <div
+                      key={index}
+                      className="flex items-start gap-3 p-4 rounded-lg border-l-4"
+                      style={{
+                        backgroundColor: `${landingConfig.secondary_color}10`,
+                        borderLeftColor: landingConfig.secondary_color,
+                      }}
+                    >
                       {benefit.icon ? (
-                        <span className="text-xl flex-shrink-0">{benefit.icon}</span>
+                        <span className="text-2xl flex-shrink-0">{benefit.icon}</span>
                       ) : (
-                        <Check className="h-5 w-5 flex-shrink-0 mt-1" style={{ color: landingConfig.secondary_color }} />
+                        <Check
+                          className="h-6 w-6 flex-shrink-0 mt-1"
+                          style={{ color: landingConfig.secondary_color }}
+                        />
                       )}
-                      <span className="text-gray-700">{benefit.description}</span>
-                    </li>
+                      <div>
+                        {benefit.title && (
+                          <div
+                            className="font-semibold mb-1"
+                            style={{ color: landingConfig.secondary_color }}
+                          >
+                            {benefit.title}
+                          </div>
+                        )}
+                        <span className="text-gray-700">{benefit.description}</span>
+                      </div>
+                    </div>
                   ))}
-                </ul>
+                </div>
               </div>
             )}
 
             {landingConfig.special_message && (
               <div
-                className="mb-8 p-6 border rounded-xl"
+                className="mb-8 p-6 border-2 rounded-xl"
                 style={{
-                  backgroundColor: `${landingConfig.primary_color}10`,
-                  borderColor: `${landingConfig.primary_color}40`,
+                  backgroundColor: `${landingConfig.primary_color}15`,
+                  borderColor: landingConfig.primary_color,
                 }}
               >
-                <p className="text-gray-800 text-center font-medium">
+                <p
+                  className="text-center font-semibold text-lg"
+                  style={{ color: landingConfig.primary_color }}
+                >
                   {landingConfig.special_message}
                 </p>
               </div>
             )}
 
             {landingConfig.testimonials && (
-              <div className="mb-8 p-6 bg-gray-50 border border-gray-200 rounded-xl">
+              <div
+                className="mb-8 p-6 border-l-4 rounded-xl"
+                style={{
+                  backgroundColor: `${landingConfig.secondary_color}08`,
+                  borderLeftColor: landingConfig.secondary_color,
+                }}
+              >
                 <blockquote className="text-gray-700 italic">
                   "{landingConfig.testimonials}"
                 </blockquote>
               </div>
             )}
 
-            <div className="text-center pt-8 border-t">
-              <h3 className="text-2xl font-semibold text-gray-900 mb-2">
+            <div
+              className="text-center pt-8 border-t-4"
+              style={{ borderTopColor: `${landingConfig.primary_color}30` }}
+            >
+              <h3
+                className="text-2xl font-semibold mb-2"
+                style={{ color: landingConfig.primary_color }}
+              >
                 Ready to Get Started?
               </h3>
               {landingConfig.pricing_info && (
