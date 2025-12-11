@@ -14,12 +14,18 @@ interface LandingPageConfig {
   value_proposition: string;
   audience_description: string;
   hero_image_url: string | null;
-  bullet_points: string[];
-  cta_text: string;
-  cta_subtext: string;
-  testimonial_text: string | null;
-  testimonial_author: string | null;
+  course_benefits: Array<{
+    icon?: string;
+    title?: string;
+    description: string;
+  }> | null;
+  cta_button_text: string;
+  pricing_info: string | null;
+  testimonials: string | null;
   special_message: string | null;
+  primary_color: string;
+  secondary_color: string;
+  page_style: string;
 }
 
 interface Course {
@@ -148,7 +154,16 @@ export default function CustomCourseLandingPage({
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center gap-2">
-                <BookOpen className="h-7 w-7 text-blue-600" />
+                <img
+                  src="/courseforge-logo.svg"
+                  alt="CourseForge"
+                  className="h-8 w-8"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                  }}
+                />
+                <BookOpen className="h-7 w-7 text-blue-600 hidden" />
                 <span className="text-xl font-bold text-gray-900">CourseForge</span>
               </div>
               <button
@@ -184,7 +199,16 @@ export default function CustomCourseLandingPage({
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
-                <BookOpen className="h-7 w-7 text-blue-600" />
+                <img
+                  src="/courseforge-logo.svg"
+                  alt="CourseForge"
+                  className="h-8 w-8"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                  }}
+                />
+                <BookOpen className="h-7 w-7 hidden" style={{ color: landingConfig?.primary_color || '#2563eb' }} />
                 <span className="text-xl font-bold text-gray-900">CourseForge</span>
               </div>
               <button
@@ -245,11 +269,17 @@ export default function CustomCourseLandingPage({
 
           <div className="p-8 md:p-12">
             <div className="mb-8">
-              <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full mb-4">
+              <span
+                className="inline-block px-3 py-1 text-sm font-medium rounded-full mb-4"
+                style={{
+                  backgroundColor: `${landingConfig.primary_color}20`,
+                  color: landingConfig.primary_color,
+                }}
+              >
                 {course.difficulty_level}
               </span>
               <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-                {landingConfig.course_headline}
+                {landingConfig.course_headline || course.title}
               </h1>
               <p className="text-xl text-gray-600 leading-relaxed">
                 {landingConfig.value_proposition}
@@ -273,14 +303,18 @@ export default function CustomCourseLandingPage({
               </div>
             </div>
 
-            {landingConfig.bullet_points && landingConfig.bullet_points.length > 0 && (
+            {landingConfig.course_benefits && landingConfig.course_benefits.length > 0 && (
               <div className="mb-8">
                 <h2 className="text-2xl font-semibold text-gray-900 mb-4">What you'll learn</h2>
                 <ul className="grid md:grid-cols-2 gap-3">
-                  {landingConfig.bullet_points.map((point, index) => (
+                  {landingConfig.course_benefits.map((benefit, index) => (
                     <li key={index} className="flex items-start gap-3">
-                      <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-1" />
-                      <span className="text-gray-700">{point}</span>
+                      {benefit.icon ? (
+                        <span className="text-xl flex-shrink-0">{benefit.icon}</span>
+                      ) : (
+                        <Check className="h-5 w-5 flex-shrink-0 mt-1" style={{ color: landingConfig.secondary_color }} />
+                      )}
+                      <span className="text-gray-700">{benefit.description}</span>
                     </li>
                   ))}
                 </ul>
@@ -288,41 +322,58 @@ export default function CustomCourseLandingPage({
             )}
 
             {landingConfig.special_message && (
-              <div className="mb-8 p-6 bg-blue-50 border border-blue-200 rounded-xl">
+              <div
+                className="mb-8 p-6 border rounded-xl"
+                style={{
+                  backgroundColor: `${landingConfig.primary_color}10`,
+                  borderColor: `${landingConfig.primary_color}40`,
+                }}
+              >
                 <p className="text-gray-800 text-center font-medium">
                   {landingConfig.special_message}
                 </p>
               </div>
             )}
 
-            {landingConfig.testimonial_text && landingConfig.testimonial_author && (
+            {landingConfig.testimonials && (
               <div className="mb-8 p-6 bg-gray-50 border border-gray-200 rounded-xl">
-                <blockquote className="text-gray-700 italic mb-2">
-                  "{landingConfig.testimonial_text}"
+                <blockquote className="text-gray-700 italic">
+                  "{landingConfig.testimonials}"
                 </blockquote>
-                <p className="text-gray-600 font-medium">— {landingConfig.testimonial_author}</p>
               </div>
             )}
 
             <div className="text-center pt-8 border-t">
               <h3 className="text-2xl font-semibold text-gray-900 mb-2">
-                {landingConfig.cta_text}
+                Ready to Get Started?
               </h3>
-              {landingConfig.cta_subtext && (
-                <p className="text-gray-600 mb-6">{landingConfig.cta_subtext}</p>
+              {landingConfig.pricing_info && (
+                <p className="text-gray-600 mb-6">{landingConfig.pricing_info}</p>
               )}
 
               {!session ? (
                 <button
                   onClick={() => onNavigate('register')}
-                  className="px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold text-lg shadow-lg transition-all hover:scale-105"
+                  className="px-8 py-4 text-white rounded-lg font-semibold text-lg shadow-lg transition-all hover:scale-105"
+                  style={{
+                    backgroundColor: landingConfig.primary_color,
+                    filter: 'brightness(1)',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(0.9)'}
+                  onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
                 >
                   Sign Up to Enroll
                 </button>
               ) : isEnrolled ? (
                 <button
                   onClick={() => onNavigate('lesson', courseId)}
-                  className="px-8 py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold text-lg shadow-lg transition-all hover:scale-105"
+                  className="px-8 py-4 text-white rounded-lg font-semibold text-lg shadow-lg transition-all hover:scale-105"
+                  style={{
+                    backgroundColor: landingConfig.secondary_color,
+                    filter: 'brightness(1)',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(0.9)'}
+                  onMouseLeave={(e) => e.currentTarget.style.filter = 'brightness(1)'}
                 >
                   Go to Course
                 </button>
@@ -330,9 +381,15 @@ export default function CustomCourseLandingPage({
                 <button
                   onClick={handleEnrollAndStart}
                   disabled={enrolling}
-                  className="px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold text-lg shadow-lg transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  className="px-8 py-4 text-white rounded-lg font-semibold text-lg shadow-lg transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  style={{
+                    backgroundColor: landingConfig.primary_color,
+                    filter: enrolling ? 'brightness(0.7)' : 'brightness(1)',
+                  }}
+                  onMouseEnter={(e) => !enrolling && (e.currentTarget.style.filter = 'brightness(0.9)')}
+                  onMouseLeave={(e) => !enrolling && (e.currentTarget.style.filter = 'brightness(1)')}
                 >
-                  {enrolling ? 'Enrolling...' : landingConfig.cta_text}
+                  {enrolling ? 'Enrolling...' : landingConfig.cta_button_text}
                 </button>
               )}
             </div>
