@@ -6,12 +6,13 @@ import LoginPage from './pages/LoginPage';
 import RegistrationPage from './pages/RegistrationPage';
 import Dashboard from './pages/Dashboard';
 import CourseCatalog from './pages/CourseCatalog';
+import CustomCourseLandingPage from './pages/CustomCourseLandingPage';
 import LessonPlayer from './pages/LessonPlayer';
 import QuizTaker from './pages/QuizTaker';
 import QuizResults from './pages/QuizResults';
 import CourseCompletion from './pages/CourseCompletion';
 
-type Page = 'landing' | 'login' | 'register' | 'dashboard' | 'catalog' | 'lesson' | 'quiz' | 'results' | 'completion';
+type Page = 'landing' | 'login' | 'register' | 'dashboard' | 'catalog' | 'course-landing' | 'lesson' | 'quiz' | 'results' | 'completion';
 
 interface AppState {
   currentPage: Page;
@@ -135,6 +136,18 @@ function App() {
         <ErrorBoundary>
           <CourseCatalog onNavigate={navigateTo} onLogout={handleLogout} />
         </ErrorBoundary>
+      );
+    case 'course-landing':
+      return appState.selectedCourseId ? (
+        <ErrorBoundary>
+          <CustomCourseLandingPage
+            courseId={appState.selectedCourseId}
+            onNavigate={navigateTo}
+            onLogout={handleLogout}
+          />
+        </ErrorBoundary>
+      ) : (
+        <CourseCatalog onNavigate={navigateTo} onLogout={handleLogout} />
       );
     case 'lesson':
       return appState.selectedCourseId !== undefined && appState.lessonIndex !== undefined ? (

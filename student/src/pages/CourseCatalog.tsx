@@ -4,7 +4,7 @@ import { studentAuth } from '../lib/studentAuth';
 import { supabase } from '../lib/supabase';
 
 interface CourseCatalogProps {
-  onNavigate: (page: 'landing' | 'login' | 'register' | 'dashboard' | 'lesson', courseId?: string) => void;
+  onNavigate: (page: 'landing' | 'login' | 'register' | 'dashboard' | 'lesson' | 'course-landing', courseId?: string) => void;
   onLogout: () => void;
 }
 
@@ -24,7 +24,6 @@ export default function CourseCatalog({ onNavigate, onLogout }: CourseCatalogPro
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [enrolling, setEnrolling] = useState<string | null>(null);
   const [session, setSession] = useState<any>(null);
 
   useEffect(() => {
@@ -90,46 +89,8 @@ export default function CourseCatalog({ onNavigate, onLogout }: CourseCatalogPro
     }
   };
 
-  const handleEnroll = async (courseId: string) => {
-    const currentSession = await studentAuth.getSession();
-
-    if (!currentSession) {
-      onNavigate('register', courseId);
-      return;
-    }
-
-    setEnrolling(courseId);
-
-    try {
-      const { error } = await supabase
-        .from('student_course_enrollments')
-        .insert({
-          student_id: currentSession.student_id,
-          user_id: currentSession.student_id,
-          course_id: courseId,
-          progress: {
-            completed_lessons: [],
-            total_lessons: courses.find(c => c.id === courseId)?.lessons.length || 0,
-            last_accessed_lesson: null,
-            quiz_scores: {},
-          },
-        });
-
-      if (error) throw error;
-
-      setCourses(prev =>
-        prev.map(course =>
-          course.id === courseId ? { ...course, isEnrolled: true } : course
-        )
-      );
-
-      await loadSession();
-    } catch (error) {
-      console.error('Error enrolling:', error);
-      alert('Failed to enroll in course');
-    } finally {
-      setEnrolling(null);
-    }
+  const handleLearnMore = (courseId: string) => {
+    onNavigate('course-landing', courseId);
   };
 
   const filteredCourses = courses.filter(course =>
@@ -287,14 +248,7 @@ export default function CourseCatalog({ onNavigate, onLogout }: CourseCatalogPro
                     </div>
                   </div>
 
-                  {!session ? (
-                    <button
-                      onClick={() => onNavigate('register', course.id)}
-                      className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-                    >
-                      Sign Up to Enroll
-                    </button>
-                  ) : course.isEnrolled ? (
+                  {course.isEnrolled ? (
                     <button
                       onClick={() => onNavigate('lesson', course.id)}
                       className="w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
@@ -303,11 +257,10 @@ export default function CourseCatalog({ onNavigate, onLogout }: CourseCatalogPro
                     </button>
                   ) : (
                     <button
-                      onClick={() => handleEnroll(course.id)}
-                      disabled={enrolling === course.id}
-                      className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => handleLearnMore(course.id)}
+                      className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
                     >
-                      {enrolling === course.id ? 'Enrolling...' : 'Enroll Now'}
+                      Learn More
                     </button>
                   )}
                 </div>
