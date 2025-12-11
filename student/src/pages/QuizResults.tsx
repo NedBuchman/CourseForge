@@ -159,7 +159,7 @@ export default function QuizResults({ attemptId, courseId, lessonIndex, onNaviga
         const { data: attempts, error: attemptsError } = await supabase
           .from('student_quiz_attempts')
           .select('passed')
-          .eq('student_id', currentSession.user_id)
+          .eq('user_id', currentSession.user_id)
           .eq('quiz_id', quiz.id)
           .order('created_at', { ascending: false })
           .limit(1);

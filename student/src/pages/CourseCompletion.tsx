@@ -93,7 +93,7 @@ export default function CourseCompletion({ courseId, onNavigate, onLogout }: Cou
       const { data: existingCert, error: certError } = await supabase
         .from('course_certificates')
         .select('*')
-        .eq('student_id', currentSession.user_id)
+        .eq('user_id', currentSession.user_id)
         .eq('course_id', courseId)
         .maybeSingle();
 
@@ -164,7 +164,7 @@ export default function CourseCompletion({ courseId, onNavigate, onLogout }: Cou
       const { data: newCert, error } = await supabase
         .from('course_certificates')
         .insert({
-          student_id: currentSession.user_id,
+          user_id: currentSession.user_id,
           course_id: courseId,
           certificate_html: certificateHtml,
           certificate_data: certificateData,

@@ -29,7 +29,7 @@ export default function LoginPage({ onNavigate, pendingEnrollmentCourseId }: Log
           const { data: existingEnrollment } = await supabase
             .from('student_course_enrollments')
             .select('id')
-            .eq('student_id', result.data.user_id)
+            .eq('user_id', result.data.user_id)
             .eq('course_id', pendingEnrollmentCourseId)
             .maybeSingle();
 
@@ -46,7 +46,6 @@ export default function LoginPage({ onNavigate, pendingEnrollmentCourseId }: Log
             const { error: enrollError } = await supabase
               .from('student_course_enrollments')
               .insert({
-                student_id: result.data.user_id,
                 user_id: result.data.user_id,
                 course_id: pendingEnrollmentCourseId,
                 progress: {

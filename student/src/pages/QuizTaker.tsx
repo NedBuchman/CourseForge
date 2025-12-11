@@ -119,7 +119,7 @@ export default function QuizTaker({ courseId, quizId, lessonIndex, onNavigate }:
       const { data: existingAttempts } = await supabase
         .from('student_quiz_attempts')
         .select('attempt_number')
-        .eq('student_id', session.user_id)
+        .eq('user_id', session.user_id)
         .eq('quiz_id', quiz.id)
         .order('attempt_number', { ascending: false })
         .limit(1);
@@ -131,7 +131,7 @@ export default function QuizTaker({ courseId, quizId, lessonIndex, onNavigate }:
       const { data: attemptData, error: attemptError } = await supabase
         .from('student_quiz_attempts')
         .insert({
-          student_id: session.user_id,
+          user_id: session.user_id,
           quiz_id: quiz.id,
           course_id: courseId,
           attempt_number: attemptNumber,
