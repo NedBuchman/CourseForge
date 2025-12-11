@@ -65,7 +65,6 @@ export default function QuizResults({ attemptId, courseId, lessonIndex, onNaviga
   };
 
   const loadResults = async (currentSession: any) => {
-
     try {
       const { data: attemptData, error: attemptError } = await supabase
         .from('student_quiz_attempts')
@@ -124,12 +123,25 @@ export default function QuizResults({ attemptId, courseId, lessonIndex, onNaviga
 
       if (courseData?.lessons) {
         const lastLesson = lessonIndex === courseData.lessons.length - 1;
+        console.log('📚 Lesson Info:');
+        console.log(`   Current Lesson Index: ${lessonIndex}`);
+        console.log(`   Total Lessons: ${courseData.lessons.length}`);
+        console.log(`   Is Last Lesson: ${lastLesson}`);
+        console.log(`   Quiz Passed: ${attemptData.passed}`);
+
         setIsLastLesson(lastLesson);
 
         // Check if course is completed (all quizzes passed on the last lesson)
         if (lastLesson && attemptData.passed) {
-          const completed = await checkCourseCompletion();
+          console.log('✅ On last lesson and passed quiz - checking course completion...');
+          const completed = await checkCourseCompletion(currentSession);
           setCourseCompleted(completed);
+          console.log(`🎯 Course Completion Result: ${completed}`);
+          console.log(`🔘 Button will be: ${completed ? 'ENABLED' : 'DISABLED'}`);
+        } else if (lastLesson && !attemptData.passed) {
+          console.log('❌ On last lesson but quiz not passed yet');
+        } else {
+          console.log('➡️  Not on last lesson - will show "Continue to Next Lesson"');
         }
       }
     } catch (error) {
@@ -139,40 +151,75 @@ export default function QuizResults({ attemptId, courseId, lessonIndex, onNaviga
     }
   };
 
-  const checkCourseCompletion = async (): Promise<boolean> => {
-    if (!session) return false;
+  const checkCourseCompletion = async (sessionToUse?: any): Promise<boolean> => {
+    const activeSession = sessionToUse || session;
+
+    if (!activeSession) {
+      console.log('❌ Completion check: No session');
+      return false;
+    }
+
+    console.log('🔍 Starting course completion check...');
+    console.log('   Course ID:', courseId);
+    console.log('   User ID:', activeSession.user_id);
 
     try {
       // Get all approved quizzes for this course
       const { data: quizzes, error: quizzesError } = await supabase
         .from('quizzes')
-        .select('id, module_index')
+        .select('id, module_index, title')
         .eq('course_id', courseId)
         .eq('approved', true)
         .order('module_index');
 
-      if (quizzesError || !quizzes || quizzes.length === 0) {
+      if (quizzesError) {
+        console.error('❌ Error fetching quizzes:', quizzesError);
         return false;
       }
 
-      // Check if student has passed all quizzes
-      for (const quiz of quizzes) {
-        const { data: attempts, error: attemptsError } = await supabase
-          .from('student_quiz_attempts')
-          .select('passed')
-          .eq('user_id', session.user_id)
-          .eq('quiz_id', quiz.id)
-          .order('created_at', { ascending: false })
-          .limit(1);
-
-        if (attemptsError || !attempts || attempts.length === 0 || !attempts[0].passed) {
-          return false;
-        }
+      if (!quizzes || quizzes.length === 0) {
+        console.log('⚠️  No approved quizzes found for this course');
+        return false;
       }
 
+      console.log(`📋 Found ${quizzes.length} approved quizzes`);
+
+      // Check if student has passed all quizzes
+      let passedCount = 0;
+      for (const quiz of quizzes) {
+        console.log(`   Checking Quiz ${quiz.module_index}: ${quiz.title}`);
+
+        const { data: attempts, error: attemptsError } = await supabase
+          .from('student_quiz_attempts')
+          .select('passed, score')
+          .eq('user_id', activeSession.user_id)
+          .eq('quiz_id', quiz.id)
+          .order('completed_at', { ascending: false })
+          .limit(1);
+
+        if (attemptsError) {
+          console.error(`   ❌ Error fetching attempts for quiz ${quiz.id}:`, attemptsError);
+          return false;
+        }
+
+        if (!attempts || attempts.length === 0) {
+          console.log(`   ⚠️  No attempts found`);
+          return false;
+        }
+
+        if (!attempts[0].passed) {
+          console.log(`   ❌ Failed (score: ${attempts[0].score}%)`);
+          return false;
+        }
+
+        console.log(`   ✅ Passed (score: ${attempts[0].score}%)`);
+        passedCount++;
+      }
+
+      console.log(`\n🎉 All ${passedCount} quizzes passed! Course completed!`);
       return true;
     } catch (error) {
-      console.error('Error checking course completion:', error);
+      console.error('❌ Error checking course completion:', error);
       return false;
     }
   };
