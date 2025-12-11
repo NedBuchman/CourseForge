@@ -152,11 +152,10 @@ export default function LessonPlayer({ courseId, lessonIndex, onNavigate, onLogo
     try {
       const { data, error } = await supabase
         .from('video_assets')
-        .select('video_url')
+        .select('video_url, generation_status')
         .eq('course_id', courseId)
         .eq('asset_type', 'lesson')
         .eq('asset_reference_id', (lessonIdx + 1).toString())
-        .eq('generation_status', 'completed')
         .maybeSingle();
 
       if (error) {
@@ -165,7 +164,13 @@ export default function LessonPlayer({ courseId, lessonIndex, onNavigate, onLogo
         return;
       }
 
-      setVideoUrl(data?.video_url || null);
+      if (data && data.generation_status === 'completed' && data.video_url) {
+        console.log('Video loaded for lesson', lessonIdx + 1, ':', data.video_url);
+        setVideoUrl(data.video_url);
+      } else {
+        console.log('No video available for lesson', lessonIdx + 1, '- Status:', data?.generation_status || 'not found');
+        setVideoUrl(null);
+      }
 
       const { data: trackingData } = await supabase
         .from('lesson_video_views')

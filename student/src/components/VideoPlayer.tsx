@@ -40,6 +40,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [captionsEnabled, setCaptionsEnabled] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const hideControlsTimeout = useRef<NodeJS.Timeout | null>(null);
   const progressReportInterval = useRef<NodeJS.Timeout | null>(null);
 
@@ -93,11 +94,28 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       }
     };
 
+    const handleError = (e: Event) => {
+      console.error('Video load error:', e);
+      const videoElement = e.target as HTMLVideoElement;
+      if (videoElement.error) {
+        const errorMessages: { [key: number]: string } = {
+          1: 'Video loading was aborted',
+          2: 'Network error occurred while loading video',
+          3: 'Video decoding failed - format may not be supported',
+          4: 'Video source is not supported or unavailable'
+        };
+        const errorMessage = errorMessages[videoElement.error.code] || 'Unknown video error';
+        setLoadError(errorMessage);
+        console.error('Video error details:', errorMessage, videoElement.error);
+      }
+    };
+
     video.addEventListener('loadedmetadata', handleLoadedMetadata);
     video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('ended', handleEnded);
     video.addEventListener('play', handlePlay);
     video.addEventListener('pause', handlePause);
+    video.addEventListener('error', handleError);
 
     return () => {
       video.removeEventListener('loadedmetadata', handleLoadedMetadata);
@@ -105,6 +123,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       video.removeEventListener('ended', handleEnded);
       video.removeEventListener('play', handlePlay);
       video.removeEventListener('pause', handlePause);
+      video.removeEventListener('error', handleError);
     };
   }, [onComplete]);
 
@@ -249,10 +268,25 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         className="w-full h-full"
         poster={thumbnailUrl}
         onClick={togglePlayPause}
+        preload="metadata"
       >
         <source src={videoUrl} type="video/mp4" />
         Your browser does not support video playback.
       </video>
+
+      {loadError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75">
+          <div className="text-center p-6 max-w-md">
+            <div className="text-red-500 mb-3">
+              <svg className="w-16 h-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-white font-semibold mb-2">Video Loading Error</h3>
+            <p className="text-gray-300 text-sm">{loadError}</p>
+          </div>
+        </div>
+      )}
 
       {!hasStarted && (
         <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
