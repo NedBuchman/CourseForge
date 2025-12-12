@@ -1,61 +1,39 @@
-# Netlify configuration for CourseForge platform
-# This file configures security headers and build settings for all three apps
-
-# Main Course Creator App
 [build]
-  command = "npm run build"
-  publish = "dist"
+command = "npx vite build"
+publish = "dist"
 
 [[headers]]
-  for = "/*"
-  [headers.values]
-    # Security Headers
-    X-Frame-Options = "DENY"
-    X-Content-Type-Options = "nosniff"
-    X-XSS-Protection = "1; mode=block"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+for = "/*"
 
-    # Content Security Policy - Relaxed for deployment debugging
-    Content-Security-Policy = """
-      default-src 'self';
-      script-src 'self' 'unsafe-inline' 'unsafe-eval';
-      style-src 'self' 'unsafe-inline';
-      img-src 'self' data: https: blob:;
-      font-src 'self' data:;
-      connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.bolt.host;
-      media-src 'self' https: blob: data:;
-      worker-src 'self' blob:;
-      frame-ancestors 'none';
-      base-uri 'self';
-      form-action 'self';
-    """
-
-    # HSTS - Forces HTTPS
-    Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
+[headers.values]
+X-Frame-Options = "DENY"
+X-Content-Type-Options = "nosniff"
+X-XSS-Protection = "1; mode=block"
+Referrer-Policy = "strict-origin-when-cross-origin"
+Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+Content-Security-Policy = "      default-src 'self';\n      script-src 'self' 'unsafe-inline' 'unsafe-eval';\n      style-src 'self' 'unsafe-inline';\n      img-src 'self' data: https: blob:;\n      font-src 'self' data:;\n      connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.bolt.host;\n      media-src 'self' https: blob: data:;\n      worker-src 'self' blob:;\n      frame-ancestors 'none';\n      base-uri 'self';\n      form-action 'self';\n    "
+Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
 
 [[headers]]
-  for = "*.js"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+for = "*.js"
+
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
-  for = "*.css"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+for = "*.css"
+
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
-  for = "*.woff2"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+for = "*.woff2"
+
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
 
 [[redirects]]
-  from = "http://*"
-  to = "https://:splat"
-  status = 301
-  force = true
-
-# Environment variable documentation
-# Required environment variables:
-# VITE_SUPABASE_URL - Your Supabase project URL
-# VITE_SUPABASE_ANON_KEY - Your Supabase anonymous key
+from = "http://*"
+to = "https://:splat"
+status = 301
+force = true
