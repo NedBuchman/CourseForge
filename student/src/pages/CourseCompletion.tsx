@@ -242,37 +242,62 @@ export default function CourseCompletion({ courseId, onNavigate, onLogout }: Cou
       return;
     }
 
-    const printWindow = window.open('', '', 'width=900,height=700');
-    console.log('  printWindow opened:', !!printWindow);
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
 
-    if (printWindow) {
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="UTF-8">
-            <title>Course Certificate</title>
-            <style>
-              body { margin: 0; padding: 20px; }
-              @media print {
-                body { margin: 0; padding: 0; }
-                @page { margin: 0; }
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Course Certificate</title>
+          <style>
+            body {
+              margin: 0;
+              padding: 20px;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              min-height: 100vh;
+            }
+            @media print {
+              body {
+                margin: 0;
+                padding: 0;
+                display: block;
               }
-            </style>
-          </head>
-          <body>
-            ${certificate.certificate_html}
-          </body>
-        </html>
-      `;
+              @page {
+                margin: 0.5in;
+                size: landscape;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          ${certificate.certificate_html}
+        </body>
+      </html>
+    `;
 
-      console.log('  Writing HTML content (length:', htmlContent.length, ')');
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
+    const iframeDoc = iframe.contentWindow?.document;
+    if (iframeDoc) {
+      iframeDoc.open();
+      iframeDoc.write(htmlContent);
+      iframeDoc.close();
 
       setTimeout(() => {
-        console.log('  Triggering print dialog');
-        printWindow.print();
+        console.log('  Triggering print dialog via iframe');
+        iframe.contentWindow?.print();
+
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+        }, 1000);
       }, 500);
     }
   };
