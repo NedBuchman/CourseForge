@@ -26,6 +26,12 @@ interface QuizQuestion {
   difficulty: 'easy' | 'medium' | 'hard';
 }
 
+interface QuizApproval {
+  quiz_id: string;
+  lesson_number: number;
+  approved: boolean;
+}
+
 interface GenerateQuizzesProps {
   courseId: string;
   courseContent: CourseContent;
@@ -45,6 +51,22 @@ export default function GenerateQuizzes({
 }: GenerateQuizzesProps) {
   useEffect(() => {
     window.scrollTo(0, 0);
+
+    const checkExistingQuizzes = async () => {
+      const { data, error } = await supabase
+        .from('quizzes')
+        .select('id')
+        .eq('course_id', courseId)
+        .limit(1);
+
+      if (!error && data && data.length > 0) {
+        await fetchQuizApprovals();
+        setShowResults(true);
+        setSelectedLesson(courseContent.lessons[0].lesson_number);
+      }
+    };
+
+    checkExistingQuizzes();
   }, []);
 
   const [questionsPerLesson, setQuestionsPerLesson] = useState(10);
@@ -54,6 +76,7 @@ export default function GenerateQuizzes({
   const [selectedLesson, setSelectedLesson] = useState<number | null>(null);
   const [generatedQuizzes, setGeneratedQuizzes] = useState<Record<number, QuizQuestion[]>>({});
   const [showResults, setShowResults] = useState(false);
+  const [quizApprovals, setQuizApprovals] = useState<Record<number, QuizApproval>>({});
 
   const totalQuestions = questionsPerLesson * courseContent.total_lessons;
   const questionsPerQuiz = 5;
@@ -81,6 +104,59 @@ export default function GenerateQuizzes({
       setQuestionsPerLesson(prev => prev - 1);
     }
   };
+
+  const fetchQuizApprovals = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('quizzes')
+        .select('id, module_index, approved')
+        .eq('course_id', courseId);
+
+      if (error) throw error;
+
+      const approvals: Record<number, QuizApproval> = {};
+      data?.forEach((quiz) => {
+        approvals[quiz.module_index] = {
+          quiz_id: quiz.id,
+          lesson_number: quiz.module_index,
+          approved: quiz.approved,
+        };
+      });
+
+      setQuizApprovals(approvals);
+    } catch (err) {
+      console.error('Error fetching quiz approvals:', err);
+    }
+  };
+
+  const toggleQuizApproval = async (lessonNumber: number) => {
+    const approval = quizApprovals[lessonNumber];
+    if (!approval) return;
+
+    try {
+      const newApprovedStatus = !approval.approved;
+
+      const { error } = await supabase
+        .from('quizzes')
+        .update({ approved: newApprovedStatus })
+        .eq('id', approval.quiz_id);
+
+      if (error) throw error;
+
+      setQuizApprovals({
+        ...quizApprovals,
+        [lessonNumber]: {
+          ...approval,
+          approved: newApprovedStatus,
+        },
+      });
+    } catch (err) {
+      console.error('Error updating quiz approval:', err);
+      alert('Failed to update quiz approval. Please try again.');
+    }
+  };
+
+  const allQuizzesApproved = Object.values(quizApprovals).every((approval) => approval.approved);
 
   const handleGenerateQuizzes = async () => {
     setIsGenerating(true);
@@ -317,7 +393,8 @@ export default function GenerateQuizzes({
       setGenerationStatus('Quiz generation complete!');
       console.log('Quiz generation completed successfully');
 
-      setTimeout(() => {
+      setTimeout(async () => {
+        await fetchQuizApprovals();
         setIsGenerating(false);
         setShowResults(true);
         setSelectedLesson(courseContent.lessons[0].lesson_number);
@@ -436,10 +513,19 @@ export default function GenerateQuizzes({
                   <Clock className="w-3 h-3" />
                   {lesson.duration}
                 </div>
-                {generatedQuizzes[lesson.lesson_number] && (
-                  <div className="mt-2 ml-11 flex items-center gap-1 text-xs text-green-600 font-semibold">
-                    <CheckCircle className="w-3 h-3" />
-                    {generatedQuizzes[lesson.lesson_number].length} questions generated
+                {quizApprovals[lesson.lesson_number] && (
+                  <div className="mt-2 ml-11 flex items-center gap-1 text-xs font-semibold">
+                    {quizApprovals[lesson.lesson_number].approved ? (
+                      <>
+                        <CheckCircle className="w-3 h-3 text-green-600" />
+                        <span className="text-green-600">Approved</span>
+                      </>
+                    ) : (
+                      <>
+                        <AlertCircle className="w-3 h-3 text-amber-600" />
+                        <span className="text-amber-600">Needs Approval</span>
+                      </>
+                    )}
                   </div>
                 )}
               </button>
@@ -666,14 +752,27 @@ export default function GenerateQuizzes({
             <div className="container mx-auto max-w-5xl px-6 py-12">
               <div className="bg-white rounded-2xl p-8 shadow-lg mb-6">
                 <div className="flex items-start gap-4 mb-6">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <CheckCircle className="w-8 h-8 text-green-600" />
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0 ${
+                    allQuizzesApproved ? 'bg-green-100' : 'bg-amber-100'
+                  }`}>
+                    {allQuizzesApproved ? (
+                      <CheckCircle className="w-8 h-8 text-green-600" />
+                    ) : (
+                      <AlertCircle className="w-8 h-8 text-amber-600" />
+                    )}
                   </div>
                   <div className="flex-1">
                     <h2 className="text-3xl font-black text-slate-900 mb-2">Review Generated Questions</h2>
                     <p className="text-lg text-slate-600">
-                      {totalQuestions} questions have been generated. Review them by lesson and make any adjustments needed.
+                      {totalQuestions} questions have been generated. Review them by lesson and approve each quiz.
                     </p>
+                    <div className="mt-3 flex items-center gap-2">
+                      <div className="text-sm font-semibold">
+                        <span className={allQuizzesApproved ? 'text-green-600' : 'text-amber-600'}>
+                          {Object.values(quizApprovals).filter(a => a.approved).length} of {Object.values(quizApprovals).length} quizzes approved
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -683,7 +782,7 @@ export default function GenerateQuizzes({
                     <div>
                       <p className="text-blue-900 font-semibold">Select a lesson from the sidebar to review its questions</p>
                       <p className="text-blue-800 text-sm mt-1">
-                        Click on any lesson to see its {questionsPerLesson} generated questions. You can regenerate if needed.
+                        Click on any lesson to see its {questionsPerLesson} generated questions. Review each quiz and click "Approve Quiz" to continue.
                       </p>
                     </div>
                   </div>
@@ -708,17 +807,41 @@ export default function GenerateQuizzes({
                 return (
                   <div className="bg-white rounded-2xl p-8 shadow-lg mb-6">
                     <div className="mb-6 pb-6 border-b-2 border-slate-200">
-                      <div className="flex items-center gap-4 mb-3">
-                        <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">
-                          {lesson.lesson_number}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">
+                            {lesson.lesson_number}
+                          </div>
+                          <div>
+                            <h3 className="text-2xl font-bold text-slate-900">{lesson.title}</h3>
+                            <p className="text-slate-600 flex items-center gap-2 mt-1">
+                              <Clock className="w-4 h-4" />
+                              {lesson.duration} • {questions.length} questions in pool
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="text-2xl font-bold text-slate-900">{lesson.title}</h3>
-                          <p className="text-slate-600 flex items-center gap-2 mt-1">
-                            <Clock className="w-4 h-4" />
-                            {lesson.duration} • {questions.length} questions in pool
-                          </p>
-                        </div>
+                        {quizApprovals[selectedLesson] && (
+                          <button
+                            onClick={() => toggleQuizApproval(selectedLesson)}
+                            className={`px-6 py-3 rounded-lg font-bold transition-all flex items-center gap-2 ${
+                              quizApprovals[selectedLesson].approved
+                                ? 'bg-green-100 text-green-700 border-2 border-green-400 hover:bg-green-200'
+                                : 'bg-amber-100 text-amber-700 border-2 border-amber-400 hover:bg-amber-200'
+                            }`}
+                          >
+                            {quizApprovals[selectedLesson].approved ? (
+                              <>
+                                <CheckCircle className="w-5 h-5" />
+                                Approved
+                              </>
+                            ) : (
+                              <>
+                                <AlertCircle className="w-5 h-5" />
+                                Approve Quiz
+                              </>
+                            )}
+                          </button>
+                        )}
                       </div>
                       <p className="text-slate-600">
                         Students will be randomly shown 5 of these questions when taking the quiz.
@@ -789,6 +912,19 @@ export default function GenerateQuizzes({
               })()}
 
               <div className="bg-white rounded-2xl p-6 shadow-lg">
+                {!allQuizzesApproved && (
+                  <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 mb-4">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-amber-900 font-semibold">Quiz Approval Required</p>
+                        <p className="text-amber-800 text-sm mt-1">
+                          Please review and approve all quizzes before continuing. Click on each lesson to review its questions and click the "Approve Quiz" button.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div className="flex gap-4">
                   <button
                     onClick={onBack}
@@ -799,14 +935,19 @@ export default function GenerateQuizzes({
                   </button>
                   <button
                     onClick={onComplete}
-                    className="flex-1 px-6 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-bold hover:from-green-600 hover:to-green-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                    disabled={!allQuizzesApproved}
+                    className={`flex-1 px-6 py-4 rounded-xl font-bold transition-all shadow-lg flex items-center justify-center gap-2 ${
+                      allQuizzesApproved
+                        ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 hover:shadow-xl'
+                        : 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                    }`}
                   >
                     Accept & Continue
                     <ArrowRight className="w-5 h-5" />
                   </button>
                 </div>
                 <p className="text-center text-slate-500 text-sm mt-4">
-                  Next: Generate course presentation
+                  {allQuizzesApproved ? 'Next: Generate course presentation' : 'Approve all quizzes to continue'}
                 </p>
               </div>
             </div>
