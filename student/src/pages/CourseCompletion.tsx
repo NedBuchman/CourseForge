@@ -41,10 +41,16 @@ export default function CourseCompletion({ courseId, onNavigate, onLogout }: Cou
   const [session, setSession] = useState<any>(null);
 
   useEffect(() => {
+    console.log('🎉 CourseCompletion mounted');
+    console.log('  courseId:', courseId);
     window.scrollTo(0, 0);
     createConfetti();
     loadSession();
   }, []);
+
+  useEffect(() => {
+    console.log('📊 Certificate state changed:', certificate);
+  }, [certificate]);
 
   const loadSession = async () => {
     const currentSession = await studentAuth.getSession();
@@ -78,18 +84,27 @@ export default function CourseCompletion({ courseId, onNavigate, onLogout }: Cou
   };
 
   const loadCertificate = async (currentSession: any) => {
+    console.log('📜 loadCertificate called');
+    console.log('  courseId:', courseId);
+    console.log('  currentSession:', currentSession);
+
     try {
       // Load course details
+      console.log('  → Fetching course details...');
       const { data: courseData, error: courseError } = await supabase
         .from('courses')
         .select('title, description, difficulty_level, duration')
         .eq('id', courseId)
         .single();
 
+      console.log('  Course query result:', { courseData, courseError });
+
       if (courseError) throw courseError;
       setCourse(courseData);
 
       // Load or generate certificate
+      console.log('  → Checking for existing certificate...');
+      console.log('    user_id:', currentSession.user_id);
       const { data: existingCert, error: certError } = await supabase
         .from('course_certificates')
         .select('*')
@@ -97,24 +112,33 @@ export default function CourseCompletion({ courseId, onNavigate, onLogout }: Cou
         .eq('course_id', courseId)
         .maybeSingle();
 
+      console.log('  Certificate query result:', { existingCert, certError });
+
       if (certError) throw certError;
 
       if (existingCert) {
+        console.log('  ✓ Found existing certificate');
+        console.log('    certificate_html length:', existingCert.certificate_html?.length);
         setCertificate(existingCert);
       } else {
-        // Generate new certificate
+        console.log('  ⚠ No existing certificate, generating new one...');
         await generateCertificate(courseData, currentSession);
       }
     } catch (error) {
-      console.error('Error loading certificate:', error);
+      console.error('❌ Error loading certificate:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const generateCertificate = async (courseData: Course, currentSession: any) => {
+    console.log('🎓 generateCertificate called');
+    console.log('  courseData:', courseData);
+    console.log('  currentSession:', currentSession);
+
     const completedAt = new Date().toISOString();
     const studentName = `${currentSession.first_name} ${currentSession.last_name}`;
+    console.log('  studentName:', studentName);
 
     const certificateData = {
       studentName,
@@ -126,6 +150,8 @@ export default function CourseCompletion({ courseId, onNavigate, onLogout }: Cou
       }),
       certificateId: crypto.randomUUID().substring(0, 8).toUpperCase()
     };
+
+    console.log('  certificateData:', certificateData);
 
     const certificateHtml = `
       <div style="width: 800px; height: 600px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: 20px solid #4a5568; padding: 40px; box-sizing: border-box; font-family: 'Georgia', serif; position: relative;">
@@ -161,6 +187,9 @@ export default function CourseCompletion({ courseId, onNavigate, onLogout }: Cou
     `;
 
     try {
+      console.log('  → Inserting certificate into database...');
+      console.log('    certificateHtml length:', certificateHtml.length);
+
       const { data: newCert, error } = await supabase
         .from('course_certificates')
         .insert({
@@ -173,10 +202,14 @@ export default function CourseCompletion({ courseId, onNavigate, onLogout }: Cou
         .select()
         .single();
 
+      console.log('  Insert result:', { newCert, error });
+
       if (error) throw error;
+
+      console.log('  ✓ Certificate generated and saved successfully');
       setCertificate(newCert);
     } catch (error) {
-      console.error('Error generating certificate:', error);
+      console.error('❌ Error generating certificate:', error);
     }
   };
 
