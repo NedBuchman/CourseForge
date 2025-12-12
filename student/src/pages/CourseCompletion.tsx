@@ -86,20 +86,37 @@ export default function CourseCompletion({ courseId, onNavigate, onLogout }: Cou
   const loadCertificate = async (currentSession: any) => {
     console.log('📜 loadCertificate called');
     console.log('  courseId:', courseId);
+    console.log('  courseId type:', typeof courseId);
     console.log('  currentSession:', currentSession);
 
     try {
-      // Load course details
+      // First check if there are duplicate courses
+      console.log('  → Checking for duplicate courses...');
+      const { data: allCourses, error: checkError } = await supabase
+        .from('courses')
+        .select('id, title')
+        .eq('id', courseId);
+
+      console.log('  All matching courses:', allCourses);
+      console.log('  Check error:', checkError);
+
+      // Load course details - use limit(1) to get just the first one
       console.log('  → Fetching course details...');
       const { data: courseData, error: courseError } = await supabase
         .from('courses')
         .select('title, description, difficulty_level, duration')
         .eq('id', courseId)
-        .single();
+        .limit(1)
+        .maybeSingle();
 
       console.log('  Course query result:', { courseData, courseError });
 
       if (courseError) throw courseError;
+
+      if (!courseData) {
+        throw new Error('Course not found');
+      }
+
       setCourse(courseData);
 
       // Load or generate certificate
