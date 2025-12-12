@@ -312,7 +312,7 @@ export default function GenerateQuizzes({
         console.warn('Failed to update course status:', updateError);
       }
 
-      setGeneratedQuizzes(generatedQuizzes);
+      setGeneratedQuizzes(allQuizzes);
       setGenerationProgress(100);
       setGenerationStatus('Quiz generation complete!');
       console.log('Quiz generation completed successfully');
