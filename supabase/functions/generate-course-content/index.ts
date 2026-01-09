@@ -100,199 +100,186 @@ function validateCourseRequest(request: any): { valid: boolean; error?: string }
   if (request.objectives && typeof request.objectives === 'string' && request.objectives.length > 1000) {
     return { valid: false, error: 'Objectives must be 1000 characters or less' };
   }
+  if (request.context && typeof request.context === 'string' && request.context.length > 2000) {
+    return { valid: false, error: 'Additional context must be 2000 characters or less' };
+  }
   return { valid: true };
 }
 
-async function logSecurityEvent(
-  supabase: any,
-  eventType: string,
-  status: 'success' | 'failure',
-  resourceType?: string,
-  resourceId?: string,
-  metadata?: Record<string, any>
-): Promise<void> {
-  try {
-    console.log(`Security Event: ${eventType} - ${status}`, {
-      resource_type: resourceType,
-      resource_id: resourceId,
-      metadata
-    });
-  } catch (error) {
-    console.error('Failed to log security event:', error);
-  }
-}
-
-interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
-
-interface CourseRequest {
-  courseId: string;
-  subject: string;
-  audience: string;
-  difficulty: string;
-  duration: string;
-  objectives?: string;
-  context?: string;
-  uploadedFileContents?: string[];
-  restrictToFilesOnly?: boolean;
-  chatHistory?: ChatMessage[];
-  contentFormat?: string;
-}
-
-async function updateProgress(
-  supabase: any,
-  courseId: string,
-  progress: number,
-  stage: string,
-  currentLesson?: number,
-  lessonsGenerated?: number[]
-) {
-  const updates: any = {
-    generation_progress: progress,
-    generation_stage: stage,
-    generation_last_heartbeat: new Date().toISOString(),
-  };
-
-  if (currentLesson !== undefined) {
-    updates.current_lesson_generating = currentLesson;
-  }
-
-  if (lessonsGenerated !== undefined) {
-    updates.lessons_generated = lessonsGenerated;
-  }
-
-  await supabase
-    .from('courses')
-    .update(updates)
-    .eq('id', courseId);
-}
-
 Deno.serve(async (req: Request) => {
-  const origin = req.headers.get("origin");
+  const origin = req.headers.get('origin');
   const corsHeaders = getCorsHeaders(origin);
 
-  if (req.method === "OPTIONS") {
+  if (req.method === 'OPTIONS') {
     return new Response(null, {
       status: 200,
       headers: corsHeaders,
     });
   }
 
-  let courseId: string | undefined;
+  if (req.method !== 'POST') {
+    return new Response(
+      JSON.stringify({ error: 'Method not allowed' }),
+      {
+        status: 405,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
+  }
+
+  let courseId: string | null = null;
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    const clientIp = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
-    const rateLimitKey = `generate-course:${clientIp}`;
-
-    if (isRateLimited(rateLimitKey, 3, 300000)) {
-      await logSecurityEvent(supabase, 'generate_course_rate_limited', 'failure', 'course', undefined, { ip: clientIp });
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Too many course generation requests. Please wait 5 minutes before trying again.",
-        }),
-        {
-          status: 429,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-    }
+    console.log('=== COURSE GENERATION REQUEST RECEIVED ===');
 
     const userId = await verifyAuthentication(req);
     if (!userId) {
-      await logSecurityEvent(supabase, 'generate_course_unauthorized', 'failure', 'course');
+      console.error('Authentication failed - invalid or missing token');
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Unauthorized: Authentication required",
-        }),
+        JSON.stringify({ error: 'Authentication failed' }),
         {
           status: 401,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
 
-    const requestData: CourseRequest = await req.json();
+    console.log('User authenticated:', userId.substring(0, 8) + '...');
+
+    const requestData = await req.json();
+    console.log('Request data:', {
+      subject: requestData.subject,
+      audience: requestData.audience,
+      difficulty: requestData.difficulty,
+      duration: requestData.duration,
+      hasObjectives: !!requestData.objectives,
+      hasContext: !!requestData.context,
+      hasUploadedFiles: !!requestData.uploadedFileContents,
+      restrictToFilesOnly: requestData.restrictToFilesOnly,
+      hasChatHistory: !!requestData.chatHistory,
+      courseId: requestData.courseId,
+      contentFormat: requestData.contentFormat,
+    });
 
     const validation = validateCourseRequest(requestData);
     if (!validation.valid) {
-      await logSecurityEvent(supabase, 'generate_course_invalid_input', 'failure', 'course', requestData.courseId, {
-        error: validation.error
-      });
+      console.error('Validation failed:', validation.error);
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: validation.error,
-        }),
+        JSON.stringify({ error: validation.error }),
         {
           status: 400,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
 
-    const { courseId: reqCourseId, subject, audience, difficulty, duration, objectives, context, uploadedFileContents, restrictToFilesOnly, chatHistory, contentFormat } = requestData;
+    courseId = requestData.courseId;
+    const { subject, audience, difficulty, duration, objectives, context, uploadedFileContents, restrictToFilesOnly, chatHistory, contentFormat } = requestData;
 
-    courseId = reqCourseId;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const claudeApiKey = Deno.env.get('ANTHROPIC_API_KEY');
 
-    const ownsCourse = await verifyCourseOwnership(supabase, courseId, userId);
-    if (!ownsCourse) {
-      await logSecurityEvent(supabase, 'generate_course_unauthorized_access', 'failure', 'course', courseId, {
-        user_id: userId
-      });
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Supabase configuration missing');
+      throw new Error('Server configuration error');
+    }
+
+    if (!claudeApiKey) {
+      console.error('ANTHROPIC_API_KEY not configured');
+      throw new Error('ANTHROPIC_API_KEY not configured');
+    }
+
+    console.log('Environment configured correctly');
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const ownsThisCourse = await verifyCourseOwnership(supabase, courseId, userId);
+    if (!ownsThisCourse) {
+      console.error('User does not own this course:', courseId);
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Unauthorized: You do not have permission to generate content for this course",
-        }),
+        JSON.stringify({ error: 'Forbidden - you do not own this course' }),
         {
           status: 403,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
 
-    await logSecurityEvent(supabase, 'generate_course_started', 'success', 'course', courseId, {
-      user_id: userId
-    });
+    console.log('Course ownership verified');
 
-    const claudeApiKey = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!claudeApiKey) {
-      console.error("ANTHROPIC_API_KEY is not configured in Supabase project secrets");
-      throw new Error("ANTHROPIC_API_KEY not configured. Please add it to Supabase project secrets.");
+    if (isRateLimited(userId, 5, 60000)) {
+      console.warn('Rate limit exceeded for user:', userId);
+      return new Response(
+        JSON.stringify({ error: 'Rate limit exceeded. Please wait a moment before trying again.' }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
-    const isVideoFormat = contentFormat === 'video';
-    const targetWordCount = isVideoFormat ? 350 : 600;
+    console.log('Rate limit check passed');
 
-    console.log("Processing course generation request:", {
-      courseId,
-      subject,
-      audience,
-      difficulty,
-      duration,
-      contentFormat,
-      targetWordCount
-    });
+    const { data: existingCourse, error: courseError } = await supabase
+      .from('courses')
+      .select('status, generation_progress')
+      .eq('id', courseId)
+      .maybeSingle();
+
+    if (courseError) {
+      console.error('Error fetching course:', courseError);
+      throw new Error('Failed to fetch course details');
+    }
+
+    if (!existingCourse) {
+      console.error('Course not found:', courseId);
+      throw new Error('Course not found');
+    }
+
+    if (existingCourse.status === 'generating') {
+      console.log('Course already generating, returning existing progress');
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: 'Course generation already in progress',
+          progress: existingCourse.generation_progress || 0,
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    console.log('Starting course generation for:', courseId);
+
+    await supabase
+      .from('courses')
+      .update({
+        status: 'generating',
+        generation_progress: 0,
+        generation_stage: 'Initializing...',
+        generation_error: null,
+        generation_last_heartbeat: new Date().toISOString(),
+      })
+      .eq('id', courseId);
+
+    const targetWordCount = duration.includes('30') ? 400 : duration.includes('1-hour') ? 600 : duration.includes('2-hours') ? 800 : 1000;
+
+    async function updateProgress(supabase: any, courseId: string, progress: number, stage: string, currentLesson: number | undefined, generatedLessons: number[]) {
+      const heartbeat = new Date().toISOString();
+      await supabase
+        .from('courses')
+        .update({
+          generation_progress: progress,
+          generation_stage: stage,
+          current_lesson_generating: currentLesson,
+          lessons_generated: generatedLessons,
+          generation_last_heartbeat: heartbeat,
+        })
+        .eq('id', courseId);
+    }
 
     await updateProgress(supabase, courseId, 5, 'Starting course generation...', undefined, []);
 
@@ -312,22 +299,22 @@ Deno.serve(async (req: Request) => {
     console.log("Starting chunked generation approach for better reliability...");
     await updateProgress(supabase, courseId, 15, `Generating course outline...`, 0, []);
 
-    const outlinePrompt = `You are an expert instructional designer. Generate a course outline ONLY.\\n\\nYou MUST respond with ONLY valid JSON (no markdown, no explanations).\\n\\nCourse Requirements:\\n- Topic: ${subject}\\n- Audience: ${audience}\\n- Difficulty: ${difficulty}\\n- Duration: ${duration}\\n- Number of Lessons: ${lessonCount}\\n- Duration per Lesson: ${lessonDuration}${objectives ? `\\n- Objectives: ${objectives}` : ''}${context ? `\\n- Emphasis: ${context}` : ''}\\n\\nGenerate an outline with ${lessonCount} lesson titles and 3-4 objectives for each lesson.\\n\\nJSON format (start with { immediately):\\n{\\n  \\\"course_title\\\": \\\"${subject}\\\",\\n  \\\"total_lessons\\\": ${lessonCount},\\n  \\\"estimated_duration\\\": \\\"${duration}\\\",\\n  \\\"lessons\\\": [\\n    {\\n      \\\"lesson_number\\\": 1,\\n      \\\"title\\\": \\\"Lesson title here\\\",\\n      \\\"duration\\\": \\\"${lessonDuration}\\\",\\n      \\\"objectives\\\": [\\\"Objective 1\\\", \\\"Objective 2\\\", \\\"Objective 3\\\"]\\n    }\\n  ]\\n}`;
+    const outlinePrompt = `You are an expert instructional designer. Generate a course outline ONLY.\n\nYou MUST respond with ONLY valid JSON (no markdown, no explanations).\n\nCourse Requirements:\n- Topic: ${subject}\n- Audience: ${audience}\n- Difficulty: ${difficulty}\n- Duration: ${duration}\n- Number of Lessons: ${lessonCount}\n- Duration per Lesson: ${lessonDuration}${objectives ? `\n- Objectives: ${objectives}` : ''}${context ? `\n- Emphasis: ${context}` : ''}\n\nGenerate an outline with ${lessonCount} lesson titles and 3-4 objectives for each lesson.\n\nJSON format (start with { immediately):\n{\n  \"course_title\": \"${subject}\",\n  \"total_lessons\": ${lessonCount},\n  \"estimated_duration\": \"${duration}\",\n  \"lessons\": [\n    {\n      \"lesson_number\": 1,\n      \"title\": \"Lesson title here\",\n      \"duration\": \"${lessonDuration}\",\n      \"objectives\": [\"Objective 1\", \"Objective 2\", \"Objective 3\"]\n    }\n  ]\n}`;
 
     const extractJSON = (text: string): string => {
       let cleaned = text.trim();
       if (cleaned.startsWith('```json')) {
-        cleaned = cleaned.replace(/^```json\\s*/i, '').replace(/\\s*```$/i, '').trim();
+        cleaned = cleaned.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
       } else if (cleaned.startsWith('```')) {
-        cleaned = cleaned.replace(/^```\\s*/i, '').replace(/\\s*```$/i, '').trim();
+        cleaned = cleaned.replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
       }
       const firstBrace = cleaned.indexOf('{');
       const lastBrace = cleaned.lastIndexOf('}');
       if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
         cleaned = cleaned.substring(firstBrace, lastBrace + 1);
       }
-      cleaned = cleaned.replace(/[\\u0000-\\u001F\\u007F-\\u009F]/g, '');
-      cleaned = cleaned.replace(/,(\\s*[}\\]])/g, '$1');
+      cleaned = cleaned.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
+      cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
       return cleaned.trim();
     };
 
@@ -370,17 +357,24 @@ Deno.serve(async (req: Request) => {
       console.log(`Generating content for lesson ${lessonNumber}/${lessonCount}: ${lessonOutline.title}`);
       await updateProgress(supabase, courseId, baseProgress + (i * progressPerLesson), `Generating lesson ${lessonNumber}/${lessonCount}: ${lessonOutline.title}`, lessonNumber, lessons.map((_, idx) => idx + 1));
 
-      let lessonContentPrompt = `You are an expert instructional designer. Generate detailed content for ONE lesson.\\n\\nYou MUST respond with ONLY valid JSON (no markdown, no explanations).\\n\\nLesson Details:\\n- Lesson Number: ${lessonNumber}\\n- Title: ${lessonOutline.title}\\n- Objectives: ${lessonOutline.objectives.join(', ')}\\n- Duration: ${lessonDuration}\\n- Target Word Count: ${targetWordCount} words\\n- Audience: ${audience}\\n- Difficulty: ${difficulty}`;
+      let lessonContentPrompt = `You are an expert instructional designer. Generate detailed content for ONE lesson.\n\nYou MUST respond with ONLY valid JSON (no markdown, no explanations).\n\nLesson Details:\n- Lesson Number: ${lessonNumber}\n- Title: ${lessonOutline.title}\n- Objectives: ${lessonOutline.objectives.join(', ')}\n- Duration: ${lessonDuration}\n- Target Word Count: ${targetWordCount} words\n- Audience: ${audience}\n- Difficulty: ${difficulty}`;
 
-      if (uploadedFileContents && uploadedFileContents.length > 0) {
-        if (restrictToFilesOnly) {
-          lessonContentPrompt += `\\n\\nCRITICAL: Base content ONLY on these reference materials:\\n${uploadedFileContents.join('\\n\\n--- NEXT DOCUMENT ---\\n\\n')}`;
-        } else {
-          lessonContentPrompt += `\\n\\nReference Materials (use as primary sources):\\n${uploadedFileContents.join('\\n\\n--- NEXT DOCUMENT ---\\n\\n')}`;
-        }
+      if (contentFormat === 'video' || contentFormat === 'hybrid') {
+        lessonContentPrompt += `\n- Format: This lesson will be presented as a VIDEO. Write clear, conversational content suitable for narration. Use a friendly, engaging tone.`;
       }
 
-      lessonContentPrompt += `\\n\\nGenerate comprehensive educational content (~${targetWordCount} words) with practical examples and HTML formatting (<strong>, <em>, <p>).\\n${isVideoFormat ? 'Keep content concise and conversational for video narration.' : ''}\\n\\nJSON format:\\n{\\n  \\\"content\\\": \\\"Detailed lesson content with <strong>formatting</strong> and examples\\\"\\n}`;
+      if (uploadedFileContents && uploadedFileContents.length > 0) {
+        lessonContentPrompt += `\n\nReference Materials:\n${uploadedFileContents.join('\n\n')}`;
+        if (restrictToFilesOnly) {
+          lessonContentPrompt += `\n\nIMPORTANT: Base the lesson content ONLY on the provided reference materials. Do not add external information.`;
+        } else {
+          lessonContentPrompt += `\n\nUse the reference materials as primary sources, but supplement with your knowledge as needed.`;
+        }
+      } else {
+        lessonContentPrompt += `\n\nNo reference materials provided. Use your knowledge to create comprehensive, accurate content.`;
+      }
+
+      lessonContentPrompt += `\n\nGenerate detailed, educational content. Use proper formatting with headings, paragraphs, and lists.\n\nJSON format (start with { immediately):\n{\n  \"content\": \"<h2>Introduction</h2><p>Content here...</p>\"\n}`;
 
       const lessonResponse = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
@@ -391,8 +385,8 @@ Deno.serve(async (req: Request) => {
         },
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
-          max_tokens: 3000,
-          temperature: 0.3,
+          max_tokens: 8000,
+          temperature: 0.5,
           messages: [{ role: "user", content: lessonContentPrompt }],
         }),
       });
@@ -414,61 +408,48 @@ Deno.serve(async (req: Request) => {
         duration: lessonDuration,
         objectives: lessonOutline.objectives,
       });
-
-      console.log(`Lesson ${lessonNumber} completed (${lessons.length}/${lessonCount})`);
-      await updateProgress(supabase, courseId, baseProgress + ((i + 1) * progressPerLesson), `Lesson ${lessonNumber}/${lessonCount} complete`, undefined, lessons.map((_, idx) => idx + 1));
     }
 
-    const courseContent = {
+    const finalCourseContent = {
       course_title: courseOutline.course_title,
       total_lessons: lessonCount,
       estimated_duration: duration,
       lessons: lessons,
     };
 
-    console.log(`All ${lessonCount} lessons generated successfully`);
-
-    await updateProgress(supabase, courseId, 95, 'Saving course to database...', undefined, Array.from({ length: lessonCount }, (_, i) => i + 1));
+    console.log('Course generation complete, updating database...');
+    await updateProgress(supabase, courseId, 95, 'Finalizing course...', undefined, lessons.map((_, idx) => idx + 1));
 
     const { error: updateError } = await supabase
       .from('courses')
       .update({
         status: 'completed',
-        generated_content: courseContent,
+        generated_content: finalCourseContent,
         generation_progress: 100,
-        generation_stage: 'Completed',
-        generation_completed_at: new Date().toISOString(),
-        current_lesson_generating: null,
-        lessons_generated: Array.from({ length: lessonCount}, (_, i) => i + 1),
-        content_status: 'completed',
-        content_generated_at: new Date().toISOString(),
-        current_step: 2,
-        last_completed_step: 1,
+        generation_stage: 'Complete',
+        updated_at: new Date().toISOString(),
       })
       .eq('id', courseId);
 
     if (updateError) {
-      console.error('Error updating course with generated content:', updateError);
-      throw new Error('Failed to save course content to database');
+      console.error('Failed to update course with generated content:', updateError);
+      throw new Error('Failed to save generated course content');
     }
 
-    console.log("Course content generated and saved successfully");
-    console.log("User will review content at step 2 before proceeding");
-    console.log("Video generation (if enabled) will start after content approval");
+    console.log('=== COURSE GENERATION COMPLETE ===');
 
     return new Response(
       JSON.stringify({
         success: true,
-        courseContent,
-        usage: outlineData.usage,
+        message: 'Course generated successfully',
+        courseContent: finalCourseContent,
       }),
       {
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
+
   } catch (error: any) {
     console.error("Error in generate-course-content:", error);
     console.error("Error stack:", error.stack);
@@ -503,25 +484,16 @@ Deno.serve(async (req: Request) => {
         .update({
           status: 'failed',
           generation_error: userFriendlyMessage,
-          generation_completed_at: new Date().toISOString(),
-          current_lesson_generating: null,
+          generation_progress: 0,
         })
         .eq('id', courseId);
     }
 
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: userFriendlyMessage,
-        errorType: error.name,
-        timestamp: new Date().toISOString(),
-      }),
+      JSON.stringify({ error: userFriendlyMessage }),
       {
         status: statusCode,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
+        headers: { ...getCorsHeaders(null), 'Content-Type': 'application/json' },
       }
     );
   }
