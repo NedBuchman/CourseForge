@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "test:lesson-player": "node test-lesson-player.js",
     "test:quiz-taker": "node test-quiz-taker.js",
-    "test:quiz-results": "node test-quiz-results.js"
+    "test:quiz-results": "node test-quiz-results.js",
+    "refresh:videos": "node refresh-all-video-urls.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.87.0",

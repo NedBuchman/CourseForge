@@ -138,10 +138,64 @@ Deno.serve(async (req: Request) => {
 
     const successCount = updates.filter(u => u.success).length;
 
+    // Sync video URLs to courses.generated_content->lessons
+    if (successCount > 0) {
+      console.log('Syncing video URLs to course lessons...');
+
+      const { data: course, error: courseError } = await supabase
+        .from('courses')
+        .select('id, generated_content')
+        .eq('id', courseId)
+        .single();
+
+      if (!courseError && course && course.generated_content && course.generated_content.lessons) {
+        const { data: allVideos } = await supabase
+          .from('video_assets')
+          .select('asset_reference_id, video_url, provider_video_id')
+          .eq('course_id', courseId)
+          .eq('generation_status', 'completed')
+          .not('video_url', 'is', null);
+
+        if (allVideos && allVideos.length > 0) {
+          const videoMap = new Map(
+            allVideos.map(v => [v.asset_reference_id, { video_url: v.video_url, video_id: v.provider_video_id }])
+          );
+
+          const updatedLessons = course.generated_content.lessons.map(lesson => {
+            const lessonNumber = lesson.lesson_number.toString();
+            const videoData = videoMap.get(lessonNumber);
+
+            if (videoData) {
+              return {
+                ...lesson,
+                video_url: videoData.video_url,
+                video_id: videoData.video_id
+              };
+            }
+            return lesson;
+          });
+
+          await supabase
+            .from('courses')
+            .update({
+              generated_content: {
+                ...course.generated_content,
+                lessons: updatedLessons
+              }
+            })
+            .eq('id', courseId);
+
+          console.log('✅ Synced video URLs to course lessons');
+        }
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         message: `Refreshed ${successCount} of ${videos.length} videos`,
+        videosRefreshed: successCount,
+        details: successCount > 0 ? `Videos refreshed and synced to course lessons` : 'No videos needed refresh',
         updates
       }, null, 2),
       {
